@@ -1,0 +1,10 @@
+/bin/
+/vendor/
+/.idea/
+/.golangci.yml
+
+/coverage.*
+/go.work*
+
+/docs/swagger.*
+/config/docs.go
