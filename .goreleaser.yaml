@@ -1,0 +1,114 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
+
+project_name: calendar
+
+git:
+  ignore_tags:
+    - docs
+
+release:
+  header: |
+    Get the latest release with brew or binary:
+
+    ```sh
+    # curl -fSL https://github.com/worldline-go/calendar/releases/latest/download/calendar_Linux_x86_64.tar.gz | tar -xz --overwrite -C ~/bin/ calendar
+    curl -fSL https://github.com/worldline-go/calendar/releases/download/{{ .Tag }}/calendar_Linux_x86_64.tar.gz | tar -xz --overwrite -C ~/bin/ calendar
+    ```
+  footer: |
+    **Full Changelog**: https://github.com/worldline-go/calendar/compare/{{ .PreviousTag }}...{{ .Tag }}
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    main: ./cmd/calendar
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+    flags:
+      - -trimpath
+archives:
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: '{{ .ProjectName }}-{{ .Version }}-checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - '^chore'
+    - 'merge conflict'
+    - Merge pull request
+    - Merge remote-tracking branch
+    - Merge branch
+    - go mod tidy
+  groups:
+    - title: Dependency updates
+      regexp: "^.*feat\\(deps\\)*:+.*$"
+      order: 300
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 100
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 200
+    - title: 'Documentation updates'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 400
+    - title: Other work
+      order: 9999
+
+brews:
+- name: calendar
+  homepage: https://github.com/worldline-go/calendar
+  description: "swiss knife for services"
+  repository:
+    owner: brew-tools
+    name: homebrew-tap
+    token: "{{ .Env.BREW_TOKEN }}"
+  directory: Formula
+
+dockers:
+- image_templates:
+  - 'ghcr.io/worldline-go/calendar:{{ .Tag }}'
+  - 'ghcr.io/worldline-go/calendar:{{ .Tag }}-alpine'
+  - 'ghcr.io/worldline-go/calendar:{{ .Tag }}-alpine3.21.3'
+  - 'ghcr.io/worldline-go/calendar:latest'
+  dockerfile: ci/alpine.Dockerfile
+  build_flag_templates:
+  - "--pull"
+  - "--label=io.artifacthub.package.readme-url=https://raw.githubusercontent.com/worldline-go/calendar/main/README.md"
+  - "--label=io.artifacthub.package.maintainers=[{\"name\":\"Eray Ates\",\"email\":\"eates23@gmail.com\"}]"
+  - "--label=io.artifacthub.package.license=MIT"
+  - "--label=org.opencontainers.image.description=calendar service"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"

@@ -4,7 +4,7 @@ import (
 	"github.com/worldline-go/types"
 )
 
-type Holiday struct {
+type Event struct {
 	ID string `db:"id" json:"id" goqu:"skipupdate"`
 
 	Name        string `db:"name"        json:"name"`
@@ -21,10 +21,10 @@ type Holiday struct {
 }
 
 type Relation struct {
-	ID        string             `db:"id"         json:"id"`
-	HolidayID string             `db:"holiday_id" json:"holiday_id"`
-	Code      types.Null[int64]  `db:"code"       json:"code"       swaggertype:"integer"`
-	Country   types.Null[string] `db:"country"    json:"country"    swaggertype:"string"`
+	ID      string             `db:"id"       json:"id"`
+	EventID string             `db:"event_id" json:"event_id"`
+	Code    types.Null[int64]  `db:"code"     json:"code"     swaggertype:"integer"`
+	Country types.Null[string] `db:"country"  json:"country"  swaggertype:"string"`
 
 	UpdatedAt types.Time `db:"updated_at" json:"updated_at"`
 	UpdatedBy string     `db:"updated_by" json:"updated_by"`

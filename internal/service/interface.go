@@ -9,17 +9,17 @@ import (
 )
 
 type Database interface {
-	AddRelation(ctx context.Context, relations ...*models.Relation) error
+	AddRelations(ctx context.Context, relations ...*models.Relation) error
 	RemoveRelation(ctx context.Context, id string) error
 	GetRelation(ctx context.Context, id string) (*models.Relation, error)
 	GetRelations(ctx context.Context, q *query.Query) ([]*models.Relation, error)
 	GetRelationsCount(ctx context.Context, q *query.Query) (int64, error)
-	GetHolidaysWithFunc(ctx context.Context, q *query.Query, fn func(*models.Holiday) error) error
 
-	AddHoliday(ctx context.Context, holidays ...*models.Holiday) error
-	GetHolidays(ctx context.Context, q *query.Query) ([]*models.Holiday, error)
-	GetHolidaysCount(ctx context.Context, q *query.Query) (int64, error)
-	GetHoliday(ctx context.Context, id string) (*models.Holiday, error)
-	UpdateHoliday(ctx context.Context, id string, holiday *models.Holiday) error
-	RemoveHoliday(ctx context.Context, id string) error
+	AddEvents(ctx context.Context, events ...*models.Event) error
+	GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error)
+	GetEventsCount(ctx context.Context, q *query.Query) (int64, error)
+	GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(*models.Event) error) error
+	GetEvent(ctx context.Context, id string) (*models.Event, error)
+	UpdateEvent(ctx context.Context, id string, event *models.Event) error
+	RemoveEvent(ctx context.Context, id string) error
 }

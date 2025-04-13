@@ -86,7 +86,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-array_gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Holiday"
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Holiday"
                         }
                     },
                     "400": {
@@ -113,7 +113,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Holiday"
+                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
                         }
                     }
                 ],
@@ -152,7 +152,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Holiday"
+                                "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
                             }
                         }
                     }
@@ -196,7 +196,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Holiday"
+                            "$ref": "#/definitions/rest.Response-github_com_worldline-go_calendar_pkg_models_Holiday"
                         }
                     },
                     "400": {
@@ -288,7 +288,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-array_gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Relation"
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Relation"
                         }
                     },
                     "400": {
@@ -315,7 +315,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Relation"
+                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
                         }
                     }
                 ],
@@ -354,7 +354,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Relation"
+                                "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
                             }
                         }
                     }
@@ -398,7 +398,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Relation"
+                            "$ref": "#/definitions/rest.Response-github_com_worldline-go_calendar_pkg_models_Relation"
                         }
                     },
                     "400": {
@@ -498,7 +498,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Holiday": {
+        "github_com_worldline-go_calendar_pkg_models.Holiday": {
             "type": "object",
             "properties": {
                 "date_from": {
@@ -519,18 +519,18 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "rrule": {
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 },
                 "updated_by": {
                     "type": "string"
-                },
-                "years": {
-                    "type": "string"
                 }
             }
         },
-        "gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Relation": {
+        "github_com_worldline-go_calendar_pkg_models.Relation": {
             "type": "object",
             "properties": {
                 "code": {
@@ -585,7 +585,7 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.Response-array_gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Holiday": {
+        "rest.Response-array_github_com_worldline-go_calendar_pkg_models_Holiday": {
             "type": "object",
             "properties": {
                 "message": {
@@ -597,12 +597,12 @@ const docTemplate = `{
                 "payload": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Holiday"
+                        "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
                     }
                 }
             }
         },
-        "rest.Response-array_gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Relation": {
+        "rest.Response-array_github_com_worldline-go_calendar_pkg_models_Relation": {
             "type": "object",
             "properties": {
                 "message": {
@@ -614,7 +614,7 @@ const docTemplate = `{
                 "payload": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Relation"
+                        "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
                     }
                 }
             }
@@ -636,7 +636,7 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.Response-gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Holiday": {
+        "rest.Response-github_com_worldline-go_calendar_pkg_models_Holiday": {
             "type": "object",
             "properties": {
                 "message": {
@@ -646,11 +646,11 @@ const docTemplate = `{
                     "$ref": "#/definitions/rest.Meta"
                 },
                 "payload": {
-                    "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Holiday"
+                    "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
                 }
             }
         },
-        "rest.Response-gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models_Relation": {
+        "rest.Response-github_com_worldline-go_calendar_pkg_models_Relation": {
             "type": "object",
             "properties": {
                 "message": {
@@ -660,7 +660,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/rest.Meta"
                 },
                 "payload": {
-                    "$ref": "#/definitions/gitlab_global_ingenico_com_finops_nextgen_apps_admin_holiday_git_pkg_models.Relation"
+                    "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
                 }
             }
         },

@@ -31,16 +31,16 @@ func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, err
 // Database
 // //////////////////////////////////////////////////////////////
 
-func (s *Service) AddHoliday(ctx context.Context, holiday ...*models.Holiday) error {
-	if err := s.Database.AddHoliday(ctx, holiday...); err != nil {
+func (s *Service) AddEvents(ctx context.Context, events ...*models.Event) error {
+	if err := s.Database.AddEvents(ctx, events...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Service) RemoveHoliday(ctx context.Context, id string) error {
-	err := s.Database.RemoveHoliday(ctx, id)
+func (s *Service) RemoveEvent(ctx context.Context, id string) error {
+	err := s.Database.RemoveEvent(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func (s *Service) RemoveHoliday(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Service) GetHolidaysCount(ctx context.Context, q *query.Query) (int64, error) {
-	count, err := s.Database.GetHolidaysCount(ctx, q)
+func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (int64, error) {
+	count, err := s.Database.GetEventsCount(ctx, q)
 	if err != nil {
 		return 0, err
 	}
@@ -57,9 +57,9 @@ func (s *Service) GetHolidaysCount(ctx context.Context, q *query.Query) (int64, 
 	return count, nil
 }
 
-func (s *Service) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Holiday, error) {
+func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error) {
 	if q.HasAny("date") {
-		var holidays []*models.Holiday
+		var events []*models.Event
 
 		dateCheck := false
 		qDateCheck := types.Time{}
@@ -106,7 +106,7 @@ func (s *Service) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Ho
 			q.Offset = offsetOrg
 		}()
 
-		err := s.Database.GetHolidaysWithFunc(ctx, q, func(h *models.Holiday) error {
+		err := s.Database.GetEventsWithFunc(ctx, q, func(h *models.Event) error {
 			if offset != nil {
 				if *offset > 0 {
 					*offset--
@@ -153,7 +153,7 @@ func (s *Service) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Ho
 				h.DateTo.V = types.Time{Time: ChangeYear(h.DateTo.V.Time, modifyYear)}
 			}
 
-			holidays = append(holidays, h)
+			events = append(events, h)
 
 			if limit != nil {
 				if *limit > 0 {
@@ -171,10 +171,10 @@ func (s *Service) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Ho
 			return nil, err
 		}
 
-		return holidays, nil
+		return events, nil
 	}
 
-	holidays, err := s.Database.GetHolidays(ctx, q)
+	holidays, err := s.Database.GetEvents(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +182,8 @@ func (s *Service) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Ho
 	return holidays, nil
 }
 
-func (s *Service) GetHoliday(ctx context.Context, id string) (*models.Holiday, error) {
-	holiday, err := s.Database.GetHoliday(ctx, id)
+func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error) {
+	holiday, err := s.Database.GetEvent(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -191,8 +191,8 @@ func (s *Service) GetHoliday(ctx context.Context, id string) (*models.Holiday, e
 	return holiday, nil
 }
 
-func (s *Service) UpdateHoliday(ctx context.Context, id string, holiday *models.Holiday) error {
-	err := s.Database.UpdateHoliday(ctx, id, holiday)
+func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
+	err := s.Database.UpdateEvent(ctx, id, event)
 	if err != nil {
 		return err
 	}
@@ -204,8 +204,8 @@ func (s *Service) UpdateHoliday(ctx context.Context, id string, holiday *models.
 // Relations
 // //////////////////////////////////////////////////////////////
 
-func (s *Service) AddRelation(ctx context.Context, relations ...*models.Relation) error {
-	if err := s.Database.AddRelation(ctx, relations...); err != nil {
+func (s *Service) AddRelations(ctx context.Context, relations ...*models.Relation) error {
+	if err := s.Database.AddRelations(ctx, relations...); err != nil {
 		return err
 	}
 

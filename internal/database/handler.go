@@ -22,32 +22,32 @@ type QeuryHoliday struct {
 }
 
 var (
-	TableHolidayStr  = "holiday"
-	TableRelationStr = "holiday_relation"
+	TableEventsStr    = "calendar_events"
+	TableRelationsStr = "calendar_relations"
 
 	Schema        exp.IdentifierExpression
-	TableHoliday  exp.AliasedExpression
+	TableEvents   exp.AliasedExpression
 	TableRelation exp.AliasedExpression
 )
 
 func setSchema(schema string) {
 	Schema = goqu.S(schema)
-	TableHoliday = Schema.Table(TableHolidayStr).As(TableHolidayStr)
-	TableRelation = Schema.Table(TableRelationStr).As(TableRelationStr)
+	TableEvents = Schema.Table(TableEventsStr).As(TableEventsStr)
+	TableRelation = Schema.Table(TableRelationsStr).As(TableRelationsStr)
 }
 
-func (db *Database) AddHoliday(ctx context.Context, holidays ...*models.Holiday) error {
+func (db *Database) AddEvents(ctx context.Context, events ...*models.Event) error {
 	updatedAt := types.Time{Time: time.Now()}
 
-	for i := range holidays {
-		holidays[i].ID = ulid.Make().String()
-		holidays[i].UpdatedAt = updatedAt
+	for i := range events {
+		events[i].ID = ulid.Make().String()
+		events[i].UpdatedAt = updatedAt
 	}
 
-	var holidayResult []*models.Holiday
+	var holidayResult []*models.Event
 
-	err := db.q.Insert(TableHoliday).
-		Rows(holidays).
+	err := db.q.Insert(TableEvents).
+		Rows(events).
 		Executor().ScanStructsContext(ctx, &holidayResult)
 	if err != nil {
 		return err
@@ -56,34 +56,34 @@ func (db *Database) AddHoliday(ctx context.Context, holidays ...*models.Holiday)
 	return nil
 }
 
-func (db *Database) getHolidaysSelect(q *query.Query) *goqu.SelectDataset {
-	selectDataSet := adaptergoqu.Select(q, db.q.From(TableHoliday),
+func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
+	selectDataSet := adaptergoqu.Select(q, db.q.From(TableEvents),
 		adaptergoqu.WithDefaultSelect(
-			TableHolidayStr+".id",
-			TableHolidayStr+".name",
-			TableHolidayStr+".description",
-			TableHolidayStr+".date_from",
-			TableHolidayStr+".date_to",
-			TableHolidayStr+".years",
-			TableHolidayStr+".disabled",
-			TableHolidayStr+".updated_at",
-			TableHolidayStr+".updated_by",
+			TableEventsStr+".id",
+			TableEventsStr+".name",
+			TableEventsStr+".description",
+			TableEventsStr+".date_from",
+			TableEventsStr+".date_to",
+			TableEventsStr+".years",
+			TableEventsStr+".disabled",
+			TableEventsStr+".updated_at",
+			TableEventsStr+".updated_by",
 		),
 		adaptergoqu.WithRename(map[string]string{
-			"code":    TableRelationStr + ".code",
-			"country": TableRelationStr + ".country",
+			"code":    TableRelationsStr + ".code",
+			"country": TableRelationsStr + ".country",
 		}),
 	)
 
 	if q.HasAny("code", "country") {
-		selectDataSet = selectDataSet.RightJoin(TableRelation, goqu.On(goqu.Ex{TableRelationStr + ".holiday_id": goqu.I("holiday.id")}))
+		selectDataSet = selectDataSet.RightJoin(TableRelation, goqu.On(goqu.Ex{TableRelationsStr + ".holiday_id": goqu.I("holiday.id")}))
 	}
 
 	return selectDataSet
 }
 
-func (db *Database) GetHolidaysCount(ctx context.Context, q *query.Query) (int64, error) {
-	count, err := db.getHolidaysSelect(q).CountContext(ctx)
+func (db *Database) GetEventsCount(ctx context.Context, q *query.Query) (int64, error) {
+	count, err := db.getEventsSelect(q).CountContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -91,29 +91,29 @@ func (db *Database) GetHolidaysCount(ctx context.Context, q *query.Query) (int64
 	return count, nil
 }
 
-func (db *Database) GetHolidays(ctx context.Context, q *query.Query) ([]*models.Holiday, error) {
-	var holidays []*models.Holiday
+func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error) {
+	var events []*models.Event
 
-	if err := db.getHolidaysSelect(q).Executor().ScanStructsContext(ctx, &holidays); err != nil {
+	if err := db.getEventsSelect(q).Executor().ScanStructsContext(ctx, &events); err != nil {
 		return nil, err
 	}
 
-	return holidays, nil
+	return events, nil
 }
 
-func (db *Database) GetHolidaysWithFunc(ctx context.Context, q *query.Query, fn func(*models.Holiday) error) error {
-	scanner, err := db.getHolidaysSelect(q).Executor().ScannerContext(ctx)
+func (db *Database) GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(*models.Event) error) error {
+	scanner, err := db.getEventsSelect(q).Executor().ScannerContext(ctx)
 	if err != nil {
 		return err
 	}
 	defer scanner.Close()
 
 	for scanner.Next() {
-		var holiday models.Holiday
-		if err := scanner.ScanStruct(&holiday); err != nil {
+		var event models.Event
+		if err := scanner.ScanStruct(&event); err != nil {
 			return err
 		}
-		if err := fn(&holiday); err != nil {
+		if err := fn(&event); err != nil {
 			if errors.Is(err, models.ErrStopLoop) {
 				break
 			}
@@ -129,14 +129,14 @@ func (db *Database) GetHolidaysWithFunc(ctx context.Context, q *query.Query, fn 
 	return nil
 }
 
-func (db *Database) GetHoliday(ctx context.Context, id string) (*models.Holiday, error) {
-	var holiday models.Holiday
+func (db *Database) GetEvent(ctx context.Context, id string) (*models.Event, error) {
+	var event models.Event
 
-	found, err := db.q.From(TableHoliday).
+	found, err := db.q.From(TableEvents).
 		Where(goqu.Ex{
 			"id": id,
 		}).
-		Executor().ScanStructContext(ctx, &holiday)
+		Executor().ScanStructContext(ctx, &event)
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +145,12 @@ func (db *Database) GetHoliday(ctx context.Context, id string) (*models.Holiday,
 		return nil, nil
 	}
 
-	return &holiday, nil
+	return &event, nil
 }
 
-func (db *Database) UpdateHoliday(ctx context.Context, id string, holiday *models.Holiday) error {
-	_, err := db.q.Update(TableHoliday).
-		Set(holiday).
+func (db *Database) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
+	_, err := db.q.Update(TableEvents).
+		Set(event).
 		Where(goqu.Ex{
 			"id": id,
 		}).
@@ -162,8 +162,8 @@ func (db *Database) UpdateHoliday(ctx context.Context, id string, holiday *model
 	return nil
 }
 
-func (db *Database) RemoveHoliday(ctx context.Context, id string) error {
-	_, err := db.q.Delete(TableHoliday).
+func (db *Database) RemoveEvent(ctx context.Context, id string) error {
+	_, err := db.q.Delete(TableEvents).
 		Where(goqu.Ex{
 			"id": id,
 		}).
@@ -179,7 +179,7 @@ func (db *Database) RemoveHoliday(ctx context.Context, id string) error {
 // Relation
 // /////////////////////////////////////////////////////////////
 
-func (db *Database) AddRelation(ctx context.Context, relations ...*models.Relation) error {
+func (db *Database) AddRelations(ctx context.Context, relations ...*models.Relation) error {
 	updatedAt := types.Time{Time: time.Now()}
 
 	for i := range relations {

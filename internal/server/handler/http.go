@@ -21,11 +21,11 @@ type HTTP struct {
 }
 
 type QueryValidator struct {
-	GetHolidays *query.Validator
+	GetEvents *query.Validator
 }
 
 func NewHTTP(svc *service.Service) (*HTTP, error) {
-	validatorGetHolidays, err := query.NewValidator(
+	validatorGetEvents, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
 		query.WithValues(query.WithIn("id", "code", "country", "name", "description", "disabled", "date", "year")),
 	)
@@ -36,20 +36,20 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 	return &HTTP{
 		Service: svc,
 		Validator: QueryValidator{
-			GetHolidays: validatorGetHolidays,
+			GetEvents: validatorGetEvents,
 		},
 	}, nil
 }
 
 func (h *HTTP) RegisterRoutes(g *echo.Group) {
-	g.GET("/holidays", h.GetHolidays)
-	g.POST("/holidays", h.AddHoliday)
-	g.POST("/holidays-bulk", h.AddHolidayBulk)
+	g.GET("/events", h.GetEvents)
+	g.POST("/events", h.AddEvent)
+	g.POST("/events-bulk", h.AddEventsBulk)
 
-	g.GET("/holidays/{id}", h.GetHoliday)
-	g.DELETE("/holidays/{id}", h.RemoveHoliday)
-	g.PUT("/holidays/{id}", h.RemoveHoliday)
-	g.PATCH("/holidays/{id}", h.RemoveHoliday)
+	g.GET("/events/{id}", h.GetEvent)
+	g.DELETE("/events/{id}", h.RemoveEvent)
+	g.PUT("/events/{id}", h.RemoveEvent)
+	g.PATCH("/events/{id}", h.RemoveEvent)
 
 	g.GET("/relations", h.GetRelations)
 	g.POST("/relations", h.AddRelation)
@@ -61,26 +61,26 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.GET("/workday", h.WorkDay)
 }
 
-// @Summary GetHolidays
-// @Description GetHolidays
+// @Summary GetEvents
+// @Description GetEvents
 // @Param id query string false "id"
 // @Param name query string false "name"
 // @Param description query string false "description"
 // @Param disabled query bool false "disabled"
 // @Param code query int false "code for relation"
 // @Param country query string false "country for relation"
-// @Param date query string false "date specific holiday"
+// @Param date query string false "date specific event"
 // @Param year query int false "year"
 // @Param limit query int false "limit" default(25)
 // @Param offset query int false "offset"
-// @Success 200 {object} rest.Response[[]models.Holiday]
+// @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holidays [get]
-func (h *HTTP) GetHolidays(c echo.Context) error {
+// @Router /events [get]
+func (h *HTTP) GetEvents(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
-		h.Validator.GetHolidays,
+		h.Validator.GetEvents,
 		query.WithSkipExpressionCmp("date", "year"),
 		query.WithDefaultLimit(25),
 	)
@@ -88,45 +88,45 @@ func (h *HTTP) GetHolidays(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	holidays, err := h.Service.GetHolidays(c.Request().Context(), q)
+	events, err := h.Service.GetEvents(c.Request().Context(), q)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	if len(holidays) == 0 {
-		return echo.NewHTTPError(http.StatusNotFound, "no holidays found")
+	if len(events) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no events found")
 	}
 
-	count, err := h.Service.GetHolidaysCount(c.Request().Context(), q)
+	count, err := h.Service.GetEventsCount(c.Request().Context(), q)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, rest.Response[[]*models.Holiday]{
+	return c.JSON(http.StatusOK, rest.Response[[]*models.Event]{
 		Meta: &rest.Meta{
 			TotalItemCount: uint64(count),
 			Limit:          q.GetLimit(),
 			Offset:         q.GetOffset(),
 		},
-		Payload: holidays,
+		Payload: events,
 	})
 }
 
-// @Summary AddHoliday
-// @Description AddHoliday
+// @Summary AddEvent
+// @Description AddEvent
 // @Param body body models.Holiday true "Holiday"
 // @Success 200 {object} rest.Response[string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holidays [post]
-func (h *HTTP) AddHoliday(c echo.Context) error {
-	v := models.Holiday{}
+// @Router /events [post]
+func (h *HTTP) AddEvent(c echo.Context) error {
+	v := models.Event{}
 	if err := c.Bind(&v); err != nil {
 		return err
 	}
 
 	v.UpdatedBy = server.GetUser(c)
 
-	if err := h.Service.AddHoliday(c.Request().Context(), &v); err != nil {
+	if err := h.Service.AddEvents(c.Request().Context(), &v); err != nil {
 		return err
 	}
 
@@ -138,15 +138,15 @@ func (h *HTTP) AddHoliday(c echo.Context) error {
 	})
 }
 
-// @Summary AddHolidayBulk
-// @Description AddHolidayBulk
+// @Summary AddEventsBulk
+// @Description AddEventsBulk
 // @Param body body []models.Holiday true "Holiday"
 // @Success 200 {object} rest.Response[[]string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holidays-bulk [post]
-func (h *HTTP) AddHolidayBulk(c echo.Context) error {
-	v := []*models.Holiday{}
+// @Router /events-bulk [post]
+func (h *HTTP) AddEventsBulk(c echo.Context) error {
+	v := []*models.Event{}
 	if err := c.Bind(&v); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (h *HTTP) AddHolidayBulk(c echo.Context) error {
 		v[i].UpdatedBy = updatedBy
 	}
 
-	if err := h.Service.AddHoliday(c.Request().Context(), v...); err != nil {
+	if err := h.Service.AddEvents(c.Request().Context(), v...); err != nil {
 		return err
 	}
 
@@ -173,20 +173,20 @@ func (h *HTTP) AddHolidayBulk(c echo.Context) error {
 	})
 }
 
-// @Summary GetHoliday
-// @Description GetHoliday
+// @Summary GetEvent
+// @Description GetEvent
 // @Param id path string true "Holiday ID"
-// @Success 200 {object} rest.Response[models.Holiday]
+// @Success 200 {object} rest.Response[models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holidays/{id} [get]
-func (h *HTTP) GetHoliday(c echo.Context) error {
+// @Router /events/{id} [get]
+func (h *HTTP) GetEvent(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
 	}
 
-	holiday, err := h.Service.GetHoliday(c.Request().Context(), id)
+	holiday, err := h.Service.GetEvent(c.Request().Context(), id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -194,25 +194,25 @@ func (h *HTTP) GetHoliday(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "holiday not found")
 	}
 
-	return c.JSON(http.StatusOK, rest.Response[models.Holiday]{
+	return c.JSON(http.StatusOK, rest.Response[models.Event]{
 		Payload: *holiday,
 	})
 }
 
-// @Summary RemoveHoliday
-// @Description RemoveHoliday
+// @Summary RemoveEvent
+// @Description RemoveEvent
 // @Param id path string true "Holiday ID"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holidays/{id} [delete]
-func (h *HTTP) RemoveHoliday(c echo.Context) error {
+// @Router /events/{id} [delete]
+func (h *HTTP) RemoveEvent(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
 	}
 
-	if err := h.Service.RemoveHoliday(c.Request().Context(), id); err != nil {
+	if err := h.Service.RemoveEvent(c.Request().Context(), id); err != nil {
 		return err
 	}
 
@@ -238,7 +238,7 @@ func (h *HTTP) AddRelation(c echo.Context) error {
 
 	v.UpdatedBy = server.GetUser(c)
 
-	if err := h.Service.AddRelation(c.Request().Context(), &v); err != nil {
+	if err := h.Service.AddRelations(c.Request().Context(), &v); err != nil {
 		return err
 	}
 
@@ -268,7 +268,7 @@ func (h *HTTP) AddRelationBulk(c echo.Context) error {
 		v[i].UpdatedBy = updatedBy
 	}
 
-	if err := h.Service.AddRelation(c.Request().Context(), v...); err != nil {
+	if err := h.Service.AddRelations(c.Request().Context(), v...); err != nil {
 		return err
 	}
 
@@ -321,7 +321,7 @@ func (h *HTTP) RemoveRelation(c echo.Context) error {
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations [get]
 func (h *HTTP) GetRelations(c echo.Context) error {
-	q, err := query.ParseWithValidator(c.QueryString(), h.Validator.GetHolidays)
+	q, err := query.ParseWithValidator(c.QueryString(), h.Validator.GetEvents)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

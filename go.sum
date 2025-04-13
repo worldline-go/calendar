@@ -198,8 +198,8 @@ github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsI
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761/go.mod h1:5TJZWKEWniPve33vlWYSoGYefn3gLQRzjfDlhSJ9ZKM=
-github.com/jackc/pgx/v5 v5.7.2 h1:mLoDLV6sonKlvjIEsV56SkWNCnuNv531l94GaIzO+XI=
-github.com/jackc/pgx/v5 v5.7.2/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
+github.com/jackc/pgx/v5 v5.7.4 h1:9wKznZrhWa2QiHL+NjTSPP6yjl3451BX3imWDnokYlg=
+github.com/jackc/pgx/v5 v5.7.4/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
 github.com/jackc/puddle/v2 v2.2.2 h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=
 github.com/jackc/puddle/v2 v2.2.2/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
@@ -388,8 +388,8 @@ github.com/worldline-go/echo-swagger v1.4.1 h1:ROpCqByA18ZPalzRgbDCDIKgJwybQFDtP
 github.com/worldline-go/echo-swagger v1.4.1/go.mod h1:+tpJS6iaCRUkAqLhFXnrkEDziwSGunBffHKGsGQcNk0=
 github.com/worldline-go/igconfig v0.3.0 h1:om09UkpU+hF302mcWrRN4CWinbj+z9O0ciudzAXfyZ8=
 github.com/worldline-go/igconfig v0.3.0/go.mod h1:592/MZPX7C2a6rMVoKvNPxTG6Wtjye/wUaqXsteAfV8=
-github.com/worldline-go/igmigrator/v2 v2.3.0 h1:+w/NsuJGKsW8WmyDxRpzGoZES3PMbRpCXCZ92/gXPiE=
-github.com/worldline-go/igmigrator/v2 v2.3.0/go.mod h1:BlPkgbnQ1v2Q4V0apK0Ycfmr6hAXMcMpyskz/IBJYak=
+github.com/worldline-go/igmigrator/v2 v2.4.0 h1:zkdDRv7Us77Io36XneVpGU81JkhBFUmywvnlCR0Wx18=
+github.com/worldline-go/igmigrator/v2 v2.4.0/go.mod h1:jfhDrQEAXnFVQ3oE6Q/Eu8Mkd8UowEkXvpJVZEhkGO4=
 github.com/worldline-go/initializer v0.5.0 h1:SFw1i9pIkvBNJW0FOjeY0nzrV2dF3FbUsvJ0VxgzHGo=
 github.com/worldline-go/initializer v0.5.0/go.mod h1:D2kY4ybHESPxcfzqTtokZAe6bPD+A7Zo5QP2toVa9Fs=
 github.com/worldline-go/logz v0.5.1 h1:jpbKUd1FbecEzs7/p1zFH7tFtQ5demmc89Fa2YTHL/Q=

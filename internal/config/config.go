@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ServiceName    = "holiday"
+	ServiceName    = "calendar"
 	ServiceVersion = "v0.0.0"
 	ServiceDomain  = "admin"
 
@@ -37,7 +37,7 @@ type Migrate struct {
 	DBDatasource string `cfg:"db_datasource" log:"false"`
 	DBType       string `cfg:"db_type"       default:"pgx"`
 	DBSchema     string `cfg:"db_schema"     default:"public"`
-	DBTable      string `cfg:"db_table"      default:"holiday_migrations"`
+	DBTable      string `cfg:"db_table"      default:"calendar_migrations"`
 }
 
 func init() {

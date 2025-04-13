@@ -24,14 +24,15 @@ env-down: ## Destroy environment
 	@echo "> Destroying environment $(BINARY)"
 	$(DOCKER_COMPOSE) down --volumes
 
+# go build -trimpath -ldflags="-s -w -X main.version=$(VERSION)" cmd/$(BINARY)/main.go
 .PHONY: build
-build: docs ## Build the binary file
-	go build -trimpath -ldflags="-s -w -X $(PKG)/config.ServiceVersion=$(VERSION)" -o $(LOCAL_BIN_DIR)/$(BINARY) $(MAIN_FILE)
+build: ## Build the binary
+	goreleaser build --snapshot --clean --single-target
 
 .PHONY: docs
 docs: ## Generate Swagger documentation
 	go mod download -x
-	swag init -pd -g internal/server/server.go -o docs
+	swag init -pd -g internal/server/server.go -o internal/server/docs
 
 .PHONY: lint
 lint: ## Lint Go files

@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/doug-martin/goqu/v9 v9.19.0
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/oklog/ulid/v2 v2.1.0
@@ -13,7 +13,7 @@ require (
 	github.com/swaggo/swag v1.16.2
 	github.com/worldline-go/echo-swagger v1.4.1
 	github.com/worldline-go/igconfig v0.3.0
-	github.com/worldline-go/igmigrator/v2 v2.3.0
+	github.com/worldline-go/igmigrator/v2 v2.4.0
 	github.com/worldline-go/initializer v0.5.0
 	github.com/worldline-go/logz v0.5.1
 	github.com/worldline-go/query v0.1.3

@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog/log"
@@ -11,9 +13,17 @@ import (
 	"github.com/worldline-go/calendar/internal/config"
 )
 
+//go:embed migrations/*
+var migrationFS embed.FS
+
 func MigrateDB(ctx context.Context, cfg *config.Config) error {
 	if cfg.Migrate.DBDatasource == "" {
 		return fmt.Errorf("migrate database datasource is empty")
+	}
+
+	migration, err := fs.Sub(migrationFS, "migrations")
+	if err != nil {
+		return fmt.Errorf("migrate database fs sub: %w", err)
 	}
 
 	db, err := sqlx.Connect(cfg.Migrate.DBType, cfg.Migrate.DBDatasource)
@@ -24,7 +34,7 @@ func MigrateDB(ctx context.Context, cfg *config.Config) error {
 	defer db.Close()
 
 	result, err := igmigrator.Migrate(ctx, db, &igmigrator.Config{
-		MigrationsDir:  "migrations",
+		Migrations:     migration,
 		Schema:         cfg.Migrate.DBSchema,
 		MigrationTable: cfg.Migrate.DBTable,
 	})
