@@ -11,8 +11,8 @@ import (
 )
 
 var migrations = []string{
-	"../../migrations/01_calendar.sql",
-	"../../migrations/02_relation.sql",
+	"migrations/01_events.sql",
+	"migrations/02_relations.sql",
 }
 
 type DatabaseSuite struct {
@@ -23,8 +23,6 @@ type DatabaseSuite struct {
 
 func (s *DatabaseSuite) SetupSuite() {
 	s.container = container.Postgres(s.T())
-
-	s.container.CreateSchema(s.T(), "public")
 	s.container.ExecuteFiles(s.T(), migrations)
 
 	s.db = newDB(s.container.Sqlx(), "public")

@@ -13,7 +13,7 @@ CREATE TABLE if NOT EXISTS calendar_relations (
     -- foreign keys
     FOREIGN KEY (event_id) REFERENCES calendar_events (id) ON DELETE CASCADE,
 
-    CONSTRAINT unique_calendar_code UNIQUE (calendar_id, code, country)
+    CONSTRAINT unique_calendar_code UNIQUE (event_id, code, country)
 );
 
 CREATE INDEX ON calendar_relations (event_id);

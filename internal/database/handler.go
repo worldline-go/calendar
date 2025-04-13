@@ -64,7 +64,7 @@ func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
 			TableEventsStr+".description",
 			TableEventsStr+".date_from",
 			TableEventsStr+".date_to",
-			TableEventsStr+".years",
+			TableEventsStr+".rrule",
 			TableEventsStr+".disabled",
 			TableEventsStr+".updated_at",
 			TableEventsStr+".updated_by",
@@ -76,7 +76,7 @@ func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
 	)
 
 	if q.HasAny("code", "country") {
-		selectDataSet = selectDataSet.RightJoin(TableRelation, goqu.On(goqu.Ex{TableRelationsStr + ".holiday_id": goqu.I("holiday.id")}))
+		selectDataSet = selectDataSet.RightJoin(TableRelation, goqu.On(goqu.Ex{TableRelationsStr + ".event_id": goqu.I("calendar_events.id")}))
 	}
 
 	return selectDataSet
