@@ -1,6 +1,6 @@
-/bin/
-/vendor/
-/.idea/
+/bin
+/vendor
+/.idea
 /.golangci.yml
 
 /coverage.*
@@ -8,3 +8,4 @@
 
 /docs/swagger.*
 /config/docs.go
+/dist
