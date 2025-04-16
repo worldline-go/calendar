@@ -30,7 +30,7 @@ func NewServer(ctx context.Context, svc *service.Service) (*server.Server, error
 		}
 
 		sGroup := e.Group("/calendar")
-		sGroup.GET("/swagger/*", echoSwagger.WrapHandler)
+		sGroup.Any("/swagger/*", echoSwagger.WrapHandler)
 
 		v1Group := sGroup.Group("/v1")
 
@@ -40,7 +40,7 @@ func NewServer(ctx context.Context, svc *service.Service) (*server.Server, error
 
 		// ////////////////////////////
 		// add handler to mux
-		mux.HandleFunc("/holiday/", e.ServeHTTP)
+		mux.HandleFunc("/calendar/", e.ServeHTTP)
 
 		return nil
 	})

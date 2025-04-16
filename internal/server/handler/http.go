@@ -21,22 +21,35 @@ type HTTP struct {
 }
 
 type QueryValidator struct {
-	GetEvents *query.Validator
+	GetEvents     *query.Validator
+	GetEventsDate *query.Validator
 }
 
 func NewHTTP(svc *service.Service) (*HTTP, error) {
 	validatorGetEvents, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("id", "code", "country", "name", "description", "disabled", "date", "year")),
+		query.WithValues(query.WithIn("id", "code", "country", "name", "description", "disabled")),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create validator for GetHolidays: %w", err)
+		return nil, fmt.Errorf("failed to create validator for GetEvents: %w", err)
+	}
+
+	validatorGetEventsDate, err := query.NewValidator(
+		query.WithField(query.WithNotAllowed()),
+		query.WithValues(query.WithIn("code", "country", "date")),
+		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("date", query.WithOperator(query.OperatorEq), query.WithNotEmpty()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator for GetEventsDate: %w", err)
 	}
 
 	return &HTTP{
 		Service: svc,
 		Validator: QueryValidator{
-			GetEvents: validatorGetEvents,
+			GetEvents:     validatorGetEvents,
+			GetEventsDate: validatorGetEventsDate,
 		},
 	}, nil
 }
@@ -59,6 +72,7 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.DELETE("/relations/{id}", h.RemoveRelation)
 
 	g.GET("/workday", h.WorkDay)
+	g.GET("/events-date", h.GetEventsDate)
 }
 
 // @Summary GetEvents
@@ -69,19 +83,17 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 // @Param disabled query bool false "disabled"
 // @Param code query int false "code for relation"
 // @Param country query string false "country for relation"
-// @Param date query string false "date specific event"
-// @Param year query int false "year"
 // @Param limit query int false "limit" default(25)
 // @Param offset query int false "offset"
 // @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events [get]
+// @Tags Events
 func (h *HTTP) GetEvents(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetEvents,
-		query.WithSkipExpressionCmp("date", "year"),
 		query.WithDefaultLimit(25),
 	)
 	if err != nil {
@@ -103,7 +115,45 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, rest.Response[[]*models.Event]{
 		Meta: &rest.Meta{
-			TotalItemCount: uint64(count),
+			TotalItemCount: count,
+			Limit:          q.GetLimit(),
+			Offset:         q.GetOffset(),
+		},
+		Payload: events,
+	})
+}
+
+// @Summary GetEventsDate
+// @Description GetEvents for specific date
+// @Param code query int false "code for relation"
+// @Param country query string false "country for relation"
+// @Param date query string true "date specific event"
+// @Success 200 {object} rest.Response[[]models.Event]
+// @Failure 400 {object} rest.ResponseMessage
+// @Failure 500 {object} rest.ResponseMessage
+// @Router /events-date [get]
+// @Tags Search
+func (h *HTTP) GetEventsDate(c echo.Context) error {
+	q, err := query.ParseWithValidator(
+		c.QueryString(),
+		h.Validator.GetEventsDate,
+		query.WithSkipExpressionCmp("date"),
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	events, err := h.Service.GetEvents(c.Request().Context(), q)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	if len(events) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no events found")
+	}
+
+	return c.JSON(http.StatusOK, rest.Response[[]*models.Event]{
+		Meta: &rest.Meta{
+			TotalItemCount: uint64(len(events)),
 			Limit:          q.GetLimit(),
 			Offset:         q.GetOffset(),
 		},
@@ -113,11 +163,12 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 
 // @Summary AddEvent
 // @Description AddEvent
-// @Param body body models.Holiday true "Holiday"
+// @Param body body models.Event true "Event"
 // @Success 200 {object} rest.Response[string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events [post]
+// @Tags Events
 func (h *HTTP) AddEvent(c echo.Context) error {
 	v := models.Event{}
 	if err := c.Bind(&v); err != nil {
@@ -140,11 +191,12 @@ func (h *HTTP) AddEvent(c echo.Context) error {
 
 // @Summary AddEventsBulk
 // @Description AddEventsBulk
-// @Param body body []models.Holiday true "Holiday"
+// @Param body body []models.Event true "Event"
 // @Success 200 {object} rest.Response[[]string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events-bulk [post]
+// @Tags Events
 func (h *HTTP) AddEventsBulk(c echo.Context) error {
 	v := []*models.Event{}
 	if err := c.Bind(&v); err != nil {
@@ -167,7 +219,7 @@ func (h *HTTP) AddEventsBulk(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, rest.Response[[]string]{
 		Message: &rest.Message{
-			Text: "Holidays added",
+			Text: "Events added",
 		},
 		Payload: ids,
 	})
@@ -175,41 +227,43 @@ func (h *HTTP) AddEventsBulk(c echo.Context) error {
 
 // @Summary GetEvent
 // @Description GetEvent
-// @Param id path string true "Holiday ID"
+// @Param id path string true "Event ID"
 // @Success 200 {object} rest.Response[models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events/{id} [get]
+// @Tags Events
 func (h *HTTP) GetEvent(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
+		return echo.NewHTTPError(http.StatusBadRequest, "missing event ID")
 	}
 
-	holiday, err := h.Service.GetEvent(c.Request().Context(), id)
+	event, err := h.Service.GetEvent(c.Request().Context(), id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	if holiday == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "holiday not found")
+	if event == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "event not found")
 	}
 
 	return c.JSON(http.StatusOK, rest.Response[models.Event]{
-		Payload: *holiday,
+		Payload: *event,
 	})
 }
 
 // @Summary RemoveEvent
 // @Description RemoveEvent
-// @Param id path string true "Holiday ID"
+// @Param id path string true "Event ID"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events/{id} [delete]
+// @Tags Events
 func (h *HTTP) RemoveEvent(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
+		return echo.NewHTTPError(http.StatusBadRequest, "missing event ID")
 	}
 
 	if err := h.Service.RemoveEvent(c.Request().Context(), id); err != nil {
@@ -230,6 +284,7 @@ func (h *HTTP) RemoveEvent(c echo.Context) error {
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations [post]
+// @Tags Relations
 func (h *HTTP) AddRelation(c echo.Context) error {
 	v := models.Relation{}
 	if err := c.Bind(&v); err != nil {
@@ -257,6 +312,7 @@ func (h *HTTP) AddRelation(c echo.Context) error {
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations-bulk [post]
+// @Tags Relations
 func (h *HTTP) AddRelationBulk(c echo.Context) error {
 	v := []*models.Relation{}
 	if err := c.Bind(&v); err != nil {
@@ -287,15 +343,16 @@ func (h *HTTP) AddRelationBulk(c echo.Context) error {
 
 // @Summary RemoveRelation
 // @Description RemoveRelation
-// @Param id path string true "Holiday ID"
+// @Param id path string true "Relation ID"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations/{id} [delete]
+// @Tags Relations
 func (h *HTTP) RemoveRelation(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
+		return echo.NewHTTPError(http.StatusBadRequest, "missing relation ID")
 	}
 
 	if err := h.Service.RemoveRelation(c.Request().Context(), id); err != nil {
@@ -320,6 +377,7 @@ func (h *HTTP) RemoveRelation(c echo.Context) error {
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations [get]
+// @Tags Relations
 func (h *HTTP) GetRelations(c echo.Context) error {
 	q, err := query.ParseWithValidator(c.QueryString(), h.Validator.GetEvents)
 	if err != nil {
@@ -351,15 +409,16 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 
 // @Summary GetRelation
 // @Description GetRelation
-// @Param id path string true "Holiday ID"
+// @Param id path string true "Relation ID"
 // @Success 200 {object} rest.Response[models.Relation]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations/{id} [get]
+// @Tags Relations
 func (h *HTTP) GetRelation(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing holiday ID")
+		return echo.NewHTTPError(http.StatusBadRequest, "missing relation ID")
 	}
 
 	relation, err := h.Service.GetRelation(c.Request().Context(), id)
@@ -367,7 +426,7 @@ func (h *HTTP) GetRelation(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 	if relation == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "holiday not found")
+		return echo.NewHTTPError(http.StatusNotFound, "relation not found")
 	}
 
 	return c.JSON(http.StatusOK, rest.Response[models.Relation]{
@@ -386,6 +445,7 @@ func (h *HTTP) GetRelation(c echo.Context) error {
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /workday [get]
+// @Tags Search
 func (h *HTTP) WorkDay(c echo.Context) error {
 
 	return nil

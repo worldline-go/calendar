@@ -1,4 +1,4 @@
-# Calendar Service
+# Calendar 🗓️
 
 [![License](https://img.shields.io/github/license/worldline-go/calendar?color=blue&style=flat-square)](https://raw.githubusercontent.com/worldline-go/calendar/main/LICENSE)
 [![Coverage](https://img.shields.io/sonar/coverage/worldline-go_calendar?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io&style=flat-square)](https://sonarcloud.io/summary/overall?id=worldline-go_calendar)

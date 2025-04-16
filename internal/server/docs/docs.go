@@ -15,10 +15,13 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/holidays": {
+        "/events": {
             "get": {
-                "description": "GetHolidays",
-                "summary": "GetHolidays",
+                "description": "GetEvents",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "GetEvents",
                 "parameters": [
                     {
                         "type": "string",
@@ -57,18 +60,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "date specific holiday",
-                        "name": "date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "year",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "default": 25,
                         "description": "limit",
@@ -86,7 +77,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Holiday"
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
                         }
                     },
                     "400": {
@@ -104,16 +95,19 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "AddHoliday",
-                "summary": "AddHoliday",
+                "description": "AddEvent",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "AddEvent",
                 "parameters": [
                     {
-                        "description": "Holiday",
+                        "description": "Event",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
+                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
                         }
                     }
                 ],
@@ -139,20 +133,23 @@ const docTemplate = `{
                 }
             }
         },
-        "/holidays-bulk": {
+        "/events-bulk": {
             "post": {
-                "description": "AddHolidayBulk",
-                "summary": "AddHolidayBulk",
+                "description": "AddEventsBulk",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "AddEventsBulk",
                 "parameters": [
                     {
-                        "description": "Holiday",
+                        "description": "Event",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
+                                "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
                             }
                         }
                     }
@@ -179,14 +176,67 @@ const docTemplate = `{
                 }
             }
         },
-        "/holidays/{id}": {
+        "/events-date": {
             "get": {
-                "description": "GetHoliday",
-                "summary": "GetHoliday",
+                "description": "GetEvents for specific date",
+                "tags": [
+                    "Search"
+                ],
+                "summary": "GetEventsDate",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "code for relation",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "country for relation",
+                        "name": "country",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "date specific event",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{id}": {
+            "get": {
+                "description": "GetEvent",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "GetEvent",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Holiday ID",
+                        "description": "Event ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -196,7 +246,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-github_com_worldline-go_calendar_pkg_models_Holiday"
+                            "$ref": "#/definitions/rest.Response-github_com_worldline-go_calendar_pkg_models_Event"
                         }
                     },
                     "400": {
@@ -214,12 +264,15 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "RemoveHoliday",
-                "summary": "RemoveHoliday",
+                "description": "RemoveEvent",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "RemoveEvent",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Holiday ID",
+                        "description": "Event ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -250,6 +303,9 @@ const docTemplate = `{
         "/relations": {
             "get": {
                 "description": "GetRelations",
+                "tags": [
+                    "Relations"
+                ],
                 "summary": "GetRelations",
                 "parameters": [
                     {
@@ -307,6 +363,9 @@ const docTemplate = `{
             },
             "post": {
                 "description": "AddRelation",
+                "tags": [
+                    "Relations"
+                ],
                 "summary": "AddRelation",
                 "parameters": [
                     {
@@ -344,6 +403,9 @@ const docTemplate = `{
         "/relations-bulk": {
             "post": {
                 "description": "AddRelationBulk",
+                "tags": [
+                    "Relations"
+                ],
                 "summary": "AddRelationBulk",
                 "parameters": [
                     {
@@ -384,11 +446,14 @@ const docTemplate = `{
         "/relations/{id}": {
             "get": {
                 "description": "GetRelation",
+                "tags": [
+                    "Relations"
+                ],
                 "summary": "GetRelation",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Holiday ID",
+                        "description": "Relation ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -417,11 +482,14 @@ const docTemplate = `{
             },
             "delete": {
                 "description": "RemoveRelation",
+                "tags": [
+                    "Relations"
+                ],
                 "summary": "RemoveRelation",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Holiday ID",
+                        "description": "Relation ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -452,6 +520,9 @@ const docTemplate = `{
         "/workday": {
             "get": {
                 "description": "WorkDay",
+                "tags": [
+                    "Search"
+                ],
                 "summary": "WorkDay",
                 "parameters": [
                     {
@@ -498,7 +569,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_worldline-go_calendar_pkg_models.Holiday": {
+        "github_com_worldline-go_calendar_pkg_models.Event": {
             "type": "object",
             "properties": {
                 "date_from": {
@@ -539,7 +610,7 @@ const docTemplate = `{
                 "country": {
                     "type": "string"
                 },
-                "holiday_id": {
+                "event_id": {
                     "type": "string"
                 },
                 "id": {
@@ -585,7 +656,7 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.Response-array_github_com_worldline-go_calendar_pkg_models_Holiday": {
+        "rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event": {
             "type": "object",
             "properties": {
                 "message": {
@@ -597,7 +668,7 @@ const docTemplate = `{
                 "payload": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
+                        "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
                     }
                 }
             }
@@ -636,7 +707,7 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.Response-github_com_worldline-go_calendar_pkg_models_Holiday": {
+        "rest.Response-github_com_worldline-go_calendar_pkg_models_Event": {
             "type": "object",
             "properties": {
                 "message": {
@@ -646,7 +717,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/rest.Meta"
                 },
                 "payload": {
-                    "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Holiday"
+                    "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
                 }
             }
         },
@@ -693,9 +764,9 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "",
 	Host:             "",
-	BasePath:         "/holiday/v1",
+	BasePath:         "/calendar/v1",
 	Schemes:          []string{},
-	Title:            "holiday API",
+	Title:            "calendar API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

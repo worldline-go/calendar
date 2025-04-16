@@ -2,6 +2,7 @@ package ics
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -317,87 +318,38 @@ func daysInMonth(year int, month time.Month) int {
 // matchAllByRules checks all BYxxx rules except BYSETPOS for a candidate
 func matchAllByRules(rrule *RRule, occ time.Time) bool {
 	if len(rrule.BySecond) > 0 {
-		found := false
-		for _, s := range rrule.BySecond {
-			if occ.Second() == s {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.BySecond, occ.Second()) {
 			return false
 		}
 	}
 	if len(rrule.ByMinute) > 0 {
-		found := false
-		for _, m := range rrule.ByMinute {
-			if occ.Minute() == m {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByMinute, occ.Minute()) {
 			return false
 		}
 	}
 	if len(rrule.ByHour) > 0 {
-		found := false
-		for _, h := range rrule.ByHour {
-			if occ.Hour() == h {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByHour, occ.Hour()) {
 			return false
 		}
 	}
 	if len(rrule.ByMonth) > 0 {
-		found := false
-		for _, m := range rrule.ByMonth {
-			if int(occ.Month()) == m {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByMonth, int(occ.Month())) {
 			return false
 		}
 	}
 	if len(rrule.ByMonthDay) > 0 {
-		found := false
-		for _, d := range rrule.ByMonthDay {
-			if occ.Day() == d {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByMonthDay, occ.Day()) {
 			return false
 		}
 	}
 	if len(rrule.ByYearDay) > 0 {
-		found := false
-		for _, yd := range rrule.ByYearDay {
-			if occ.YearDay() == yd {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByYearDay, occ.YearDay()) {
 			return false
 		}
 	}
 	if len(rrule.ByWeekNo) > 0 {
 		_, week := occ.ISOWeek()
-		found := false
-		for _, wn := range rrule.ByWeekNo {
-			if week == wn {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(rrule.ByWeekNo, week) {
 			return false
 		}
 	}

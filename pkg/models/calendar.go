@@ -10,8 +10,8 @@ type Event struct {
 	Name        string `db:"name"        json:"name"`
 	Description string `db:"description" json:"description"`
 
-	DateFrom types.Null[types.Time] `db:"date_from" json:"date_from" swaggertype:"string"`
-	DateTo   types.Null[types.Time] `db:"date_to"   json:"date_to"   swaggertype:"string"`
+	DateFrom types.Time `db:"date_from" json:"date_from" swaggertype:"string"`
+	DateTo   types.Time `db:"date_to"   json:"date_to"   swaggertype:"string"`
 
 	RRule    string `db:"rrule"    json:"rrule"`
 	Disabled bool   `db:"disabled" json:"disabled"`

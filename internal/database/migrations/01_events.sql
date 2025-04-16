@@ -3,8 +3,8 @@ CREATE TABLE if NOT EXISTS calendar_events (
     name text NOT NULL,
     description text NOT NULL DEFAULT '',
 
-    date_from timestamp with time zone,
-    date_to timestamp with time zone,
+    date_from timestamp with time zone NOT NULL,
+    date_to timestamp with time zone NOT NULL,
 
     rrule text NOT NULL DEFAULT '',
 

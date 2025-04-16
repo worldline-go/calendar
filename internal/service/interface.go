@@ -17,7 +17,7 @@ type Database interface {
 
 	AddEvents(ctx context.Context, events ...*models.Event) error
 	GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error)
-	GetEventsCount(ctx context.Context, q *query.Query) (int64, error)
+	GetEventsCount(ctx context.Context, q *query.Query) (uint64, error)
 	GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(*models.Event) error) error
 	GetEvent(ctx context.Context, id string) (*models.Event, error)
 	UpdateEvent(ctx context.Context, id string, event *models.Event) error

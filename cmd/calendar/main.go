@@ -52,7 +52,10 @@ func run(ctx context.Context) error {
 
 	// ///////////////////////////////////////////////////////
 	// service initialize
-	svc := service.New(db)
+	svc, err := service.New(ctx, db)
+	if err != nil {
+		return fmt.Errorf("failed to create service: %w", err)
+	}
 
 	// ///////////////////////////////////////////////////////
 	// server initialize

@@ -82,13 +82,13 @@ func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
 	return selectDataSet
 }
 
-func (db *Database) GetEventsCount(ctx context.Context, q *query.Query) (int64, error) {
+func (db *Database) GetEventsCount(ctx context.Context, q *query.Query) (uint64, error) {
 	count, err := db.getEventsSelect(q).CountContext(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return count, nil
+	return uint64(count), nil
 }
 
 func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error) {

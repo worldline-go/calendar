@@ -3,23 +3,40 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"sync"
 	"time"
 
+	"github.com/worldline-go/cache"
+	"github.com/worldline-go/cache/store/memory"
 	"github.com/worldline-go/query"
 	"github.com/worldline-go/types"
 
+	"github.com/worldline-go/calendar/pkg/ics"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
 type Service struct {
-	Database Database
+	db    Database
+	cache cache.Cacher[string, *ics.RRule]
+	m     sync.RWMutex
 }
 
-func New(db Database) *Service {
-	return &Service{
-		Database: db,
+func New(ctx context.Context, db Database) (*Service, error) {
+	cache, err := cache.New[string, *ics.RRule](ctx,
+		memory.Store,
+		cache.WithStoreConfig(memory.Config{
+			MaxItems: 200,
+			TTL:      30 * time.Minute,
+		}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cache: %w", err)
 	}
+
+	return &Service{
+		cache: cache,
+		db:    db,
+	}, nil
 }
 
 // WorkDay returns the next workday after the given date.
@@ -32,7 +49,7 @@ func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, err
 // //////////////////////////////////////////////////////////////
 
 func (s *Service) AddEvents(ctx context.Context, events ...*models.Event) error {
-	if err := s.Database.AddEvents(ctx, events...); err != nil {
+	if err := s.db.AddEvents(ctx, events...); err != nil {
 		return err
 	}
 
@@ -40,7 +57,7 @@ func (s *Service) AddEvents(ctx context.Context, events ...*models.Event) error 
 }
 
 func (s *Service) RemoveEvent(ctx context.Context, id string) error {
-	err := s.Database.RemoveEvent(ctx, id)
+	err := s.db.RemoveEvent(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -48,8 +65,8 @@ func (s *Service) RemoveEvent(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (int64, error) {
-	count, err := s.Database.GetEventsCount(ctx, q)
+func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (uint64, error) {
+	count, err := s.db.GetEventsCount(ctx, q)
 	if err != nil {
 		return 0, err
 	}
@@ -75,95 +92,27 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Even
 			dateCheck = true
 		}
 
-		yearCheck := false
-		year := int64(0)
-		if qYear, _ := q.Values["year"]; len(qYear) > 0 {
-			qYearStr, ok := qYear[0].Value.(string)
-			if !ok {
-				return nil, fmt.Errorf("invalid year format")
+		err := s.db.GetEventsWithFunc(ctx, q, func(h *models.Event) error {
+			if h.Disabled {
+				return nil
 			}
 
-			var err error
-			year, err = strconv.ParseInt(qYearStr, 10, 64)
+			icsRule, err := s.getRRule(ctx, h.RRule)
 			if err != nil {
-				return nil, fmt.Errorf("invalid year format: %w", err)
-			}
-
-			yearCheck = true
-		}
-
-		limitOrg := q.CloneLimit()
-		offsetOrg := q.CloneOffset()
-
-		limit := q.CloneLimit()
-		offset := q.CloneOffset()
-
-		q.Limit = nil
-		q.Offset = nil
-
-		defer func() {
-			q.Limit = limitOrg
-			q.Offset = offsetOrg
-		}()
-
-		err := s.Database.GetEventsWithFunc(ctx, q, func(h *models.Event) error {
-			if offset != nil {
-				if *offset > 0 {
-					*offset--
-
-					return nil
-				}
+				return fmt.Errorf("failed to get rrule: %w", err)
 			}
 
 			if dateCheck {
-				ok, err := CheckDate(qDateCheck, h.DateFrom, h.DateTo, h.RRule)
-				if err != nil {
-					return err
-				}
-
+				start, stop, ok := ics.MatchRRuleAt(icsRule, h.DateFrom.Time, h.DateTo.Time, qDateCheck.Time)
 				if !ok {
 					return nil
 				}
-			}
 
-			if yearCheck {
-				ok, err := CheckYear(int(year), h.DateFrom, h.DateTo, h.RRule)
-				if err != nil {
-					return err
-				}
-
-				if !ok {
-					return nil
-				}
-			}
-
-			modifyYear := 0
-			if yearCheck {
-				modifyYear = int(year)
-			} else {
-				modifyYear = qDateCheck.Year()
-			}
-
-			// modify the date's year
-			if h.DateFrom.Valid {
-				h.DateFrom.V = types.Time{Time: ChangeYear(h.DateFrom.V.Time, modifyYear)}
-			}
-
-			if h.DateTo.Valid {
-				h.DateTo.V = types.Time{Time: ChangeYear(h.DateTo.V.Time, modifyYear)}
+				h.DateFrom.Time = start
+				h.DateTo.Time = stop
 			}
 
 			events = append(events, h)
-
-			if limit != nil {
-				if *limit > 0 {
-					*limit--
-				}
-
-				if *limit == 0 {
-					return models.ErrStopLoop
-				}
-			}
 
 			return nil
 		})
@@ -174,7 +123,7 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Even
 		return events, nil
 	}
 
-	holidays, err := s.Database.GetEvents(ctx, q)
+	holidays, err := s.db.GetEvents(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +132,7 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Even
 }
 
 func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error) {
-	holiday, err := s.Database.GetEvent(ctx, id)
+	holiday, err := s.db.GetEvent(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +141,7 @@ func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error
 }
 
 func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
-	err := s.Database.UpdateEvent(ctx, id, event)
+	err := s.db.UpdateEvent(ctx, id, event)
 	if err != nil {
 		return err
 	}
@@ -205,7 +154,7 @@ func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Even
 // //////////////////////////////////////////////////////////////
 
 func (s *Service) AddRelations(ctx context.Context, relations ...*models.Relation) error {
-	if err := s.Database.AddRelations(ctx, relations...); err != nil {
+	if err := s.db.AddRelations(ctx, relations...); err != nil {
 		return err
 	}
 
@@ -213,7 +162,7 @@ func (s *Service) AddRelations(ctx context.Context, relations ...*models.Relatio
 }
 
 func (s *Service) RemoveRelation(ctx context.Context, id string) error {
-	err := s.Database.RemoveRelation(ctx, id)
+	err := s.db.RemoveRelation(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -222,7 +171,7 @@ func (s *Service) RemoveRelation(ctx context.Context, id string) error {
 }
 
 func (s *Service) GetRelation(ctx context.Context, id string) (*models.Relation, error) {
-	relation, err := s.Database.GetRelation(ctx, id)
+	relation, err := s.db.GetRelation(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +180,7 @@ func (s *Service) GetRelation(ctx context.Context, id string) (*models.Relation,
 }
 
 func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]*models.Relation, error) {
-	relations, err := s.Database.GetRelations(ctx, q)
+	relations, err := s.db.GetRelations(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +189,7 @@ func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]*models.R
 }
 
 func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64, error) {
-	count, err := s.Database.GetRelationsCount(ctx, q)
+	count, err := s.db.GetRelationsCount(ctx, q)
 	if err != nil {
 		return 0, err
 	}
