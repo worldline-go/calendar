@@ -300,6 +300,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/ics": {
+            "post": {
+                "description": "AddICS",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "iCal"
+                ],
+                "summary": "AddICS",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "ICS file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "code for relation",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "country for relation",
+                        "name": "country",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timezone like Europe/Amsterdam",
+                        "name": "tz",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/relations": {
             "get": {
                 "description": "GetRelations",

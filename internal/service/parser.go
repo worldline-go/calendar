@@ -5,12 +5,12 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/worldline-go/calendar/pkg/ics"
+	"github.com/worldline-go/calendar/pkg/ical"
 )
 
-func (s *Service) getRRule(ctx context.Context, rruleStr string) (*ics.RRule, error) {
+func (s *Service) getRRule(ctx context.Context, repeatStr string) (*ical.Repeat, error) {
 	s.m.RLock()
-	rrule, ok, err := s.cache.Get(ctx, rruleStr)
+	rrule, ok, err := s.cache.Get(ctx, repeatStr)
 	s.m.RUnlock()
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get rrule from cache")
@@ -24,7 +24,7 @@ func (s *Service) getRRule(ctx context.Context, rruleStr string) (*ics.RRule, er
 	s.m.Lock()
 	defer s.m.Unlock()
 	// Double-check cache after acquiring write lock (to avoid race)
-	rrule, ok, err = s.cache.Get(ctx, rruleStr)
+	rrule, ok, err = s.cache.Get(ctx, repeatStr)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get rrule from cache (after lock)")
 	}
@@ -32,12 +32,12 @@ func (s *Service) getRRule(ctx context.Context, rruleStr string) (*ics.RRule, er
 		return rrule, nil
 	}
 
-	rrule, err = ics.ParseRRule(rruleStr)
+	rrule, err = ical.ParseRepeat(repeatStr)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.cache.Set(ctx, rruleStr, rrule); err != nil {
+	if err := s.cache.Set(ctx, repeatStr, rrule); err != nil {
 		log.Error().Err(err).Msg("failed to set rrule in cache")
 	}
 

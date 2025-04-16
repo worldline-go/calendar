@@ -1,4 +1,4 @@
-package ics
+package ical
 
 import (
 	"testing"

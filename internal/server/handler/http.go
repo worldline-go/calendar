@@ -2,13 +2,17 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/worldline-go/query"
 	"github.com/worldline-go/rest"
 	"github.com/worldline-go/rest/server"
+	"github.com/worldline-go/types"
 
 	"github.com/worldline-go/calendar/internal/service"
 	"github.com/worldline-go/calendar/pkg/models"
@@ -73,6 +77,7 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 
 	g.GET("/workday", h.WorkDay)
 	g.GET("/events-date", h.GetEventsDate)
+	g.POST("/ics", h.AddICS)
 }
 
 // @Summary GetEvents
@@ -113,7 +118,7 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, rest.Response[[]*models.Event]{
+	return c.JSON(http.StatusOK, rest.Response[[]models.Event]{
 		Meta: &rest.Meta{
 			TotalItemCount: count,
 			Limit:          q.GetLimit(),
@@ -151,7 +156,7 @@ func (h *HTTP) GetEventsDate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "no events found")
 	}
 
-	return c.JSON(http.StatusOK, rest.Response[[]*models.Event]{
+	return c.JSON(http.StatusOK, rest.Response[[]models.Event]{
 		Meta: &rest.Meta{
 			TotalItemCount: uint64(len(events)),
 			Limit:          q.GetLimit(),
@@ -177,7 +182,7 @@ func (h *HTTP) AddEvent(c echo.Context) error {
 
 	v.UpdatedBy = server.GetUser(c)
 
-	if err := h.Service.AddEvents(c.Request().Context(), &v); err != nil {
+	if err := h.Service.AddEvents(c.Request().Context(), v); err != nil {
 		return err
 	}
 
@@ -198,7 +203,7 @@ func (h *HTTP) AddEvent(c echo.Context) error {
 // @Router /events-bulk [post]
 // @Tags Events
 func (h *HTTP) AddEventsBulk(c echo.Context) error {
-	v := []*models.Event{}
+	v := []models.Event{}
 	if err := c.Bind(&v); err != nil {
 		return err
 	}
@@ -293,7 +298,7 @@ func (h *HTTP) AddRelation(c echo.Context) error {
 
 	v.UpdatedBy = server.GetUser(c)
 
-	if err := h.Service.AddRelations(c.Request().Context(), &v); err != nil {
+	if err := h.Service.AddRelations(c.Request().Context(), v); err != nil {
 		return err
 	}
 
@@ -314,7 +319,7 @@ func (h *HTTP) AddRelation(c echo.Context) error {
 // @Router /relations-bulk [post]
 // @Tags Relations
 func (h *HTTP) AddRelationBulk(c echo.Context) error {
-	v := []*models.Relation{}
+	v := []models.Relation{}
 	if err := c.Bind(&v); err != nil {
 		return err
 	}
@@ -397,7 +402,7 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, rest.Response[[]*models.Relation]{
+	return c.JSON(http.StatusOK, rest.Response[[]models.Relation]{
 		Meta: &rest.Meta{
 			TotalItemCount: uint64(count),
 			Limit:          q.GetLimit(),
@@ -449,4 +454,67 @@ func (h *HTTP) GetRelation(c echo.Context) error {
 func (h *HTTP) WorkDay(c echo.Context) error {
 
 	return nil
+}
+
+// @Summary AddICS
+// @Description AddICS
+// @Accept multipart/form-data
+// @Param file formData file true "ICS file"
+// @Param code query int false "code for relation"
+// @Param country query string false "country for relation"
+// @Param tz query string false "timezone like Europe/Amsterdam"
+// @Success 200 {object} rest.ResponseMessage
+// @Failure 400 {object} rest.ResponseMessage
+// @Failure 500 {object} rest.ResponseMessage
+// @Router /ics [post]
+// @Tags iCal
+func (h *HTTP) AddICS(c echo.Context) error {
+	var codeNull types.Null[int64]
+	if code := c.QueryParam("code"); code != "" {
+		codeInt, err := strconv.ParseInt(code, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid code: "+err.Error())
+		}
+
+		codeNull = types.NewNull(codeInt)
+	}
+
+	var countryNull types.Null[string]
+	if country := c.QueryParam("country"); country != "" {
+		countryNull = types.NewNull(country)
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "failed to get file: "+err.Error())
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to open file: "+err.Error())
+	}
+	defer src.Close()
+
+	v, err := io.ReadAll(src)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read file: "+err.Error())
+	}
+
+	commonRelation := models.Relation{
+		Code:      codeNull,
+		Country:   countryNull,
+		UpdatedBy: server.GetUser(c),
+	}
+
+	tz := strings.TrimSpace(c.QueryParam("tz"))
+
+	if err := h.Service.AddIcal(c.Request().Context(), v, commonRelation, tz); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add ICS: "+err.Error())
+	}
+
+	return c.JSON(http.StatusOK, rest.ResponseMessage{
+		Message: &rest.Message{
+			Text: "ICS added",
+		},
+	})
 }

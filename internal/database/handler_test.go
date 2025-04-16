@@ -37,12 +37,12 @@ func (s *DatabaseSuite) TearDownSuite() {
 }
 
 func (s *DatabaseSuite) TestAddEvents() {
-	calendar := &models.Event{
+	calendar := models.Event{
 		Name:        "New Year",
 		Description: "The most wonderful time of the year",
 	}
 
-	err := s.db.AddEvents(s.T().Context(), calendar)
+	err := s.db.AddEvents(s.T().Context(), []models.Event{calendar})
 	s.Require().NoError(err)
 
 	parse, err := query.Parse("", query.WithExpressionCmp("id", query.ExpressionCmp{

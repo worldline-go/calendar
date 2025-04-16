@@ -13,3 +13,10 @@ This service that provides information about holidays in a given country, bank o
 ## Development
 
 Use `make` to show help and create env, run tests, etc.
+
+## References
+
+- https://datatracker.ietf.org/doc/html/rfc5545
+- https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+- https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
+- https://www.thunderbird.net/en-US/calendar/holidays/

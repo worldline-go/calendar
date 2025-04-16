@@ -12,6 +12,7 @@ import (
 	"github.com/worldline-go/query/adapter/adaptergoqu"
 	"github.com/worldline-go/types"
 
+	"github.com/worldline-go/calendar/internal/intercom"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
@@ -36,19 +37,20 @@ func setSchema(schema string) {
 	TableRelation = Schema.Table(TableRelationsStr).As(TableRelationsStr)
 }
 
-func (db *Database) AddEvents(ctx context.Context, events ...*models.Event) error {
+func (db *Database) AddEvents(ctx context.Context, events []models.Event) error {
 	updatedAt := types.Time{Time: time.Now()}
 
 	for i := range events {
-		events[i].ID = ulid.Make().String()
+		if events[i].ID == "" {
+			events[i].ID = ulid.Make().String()
+		}
 		events[i].UpdatedAt = updatedAt
 	}
 
-	var holidayResult []*models.Event
-
-	err := db.q.Insert(TableEvents).
+	_, err := db.q.Insert(TableEvents).
 		Rows(events).
-		Executor().ScanStructsContext(ctx, &holidayResult)
+		OnConflict(goqu.DoNothing()).
+		Executor().ExecContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -91,8 +93,8 @@ func (db *Database) GetEventsCount(ctx context.Context, q *query.Query) (uint64,
 	return uint64(count), nil
 }
 
-func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error) {
-	var events []*models.Event
+func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error) {
+	var events []models.Event
 
 	if err := db.getEventsSelect(q).Executor().ScanStructsContext(ctx, &events); err != nil {
 		return nil, err
@@ -101,7 +103,7 @@ func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]*models.Ev
 	return events, nil
 }
 
-func (db *Database) GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(*models.Event) error) error {
+func (db *Database) GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(models.Event) error) error {
 	scanner, err := db.getEventsSelect(q).Executor().ScannerContext(ctx)
 	if err != nil {
 		return err
@@ -113,8 +115,8 @@ func (db *Database) GetEventsWithFunc(ctx context.Context, q *query.Query, fn fu
 		if err := scanner.ScanStruct(&event); err != nil {
 			return err
 		}
-		if err := fn(&event); err != nil {
-			if errors.Is(err, models.ErrStopLoop) {
+		if err := fn(event); err != nil {
+			if errors.Is(err, intercom.ErrStopLoop) {
 				break
 			}
 
@@ -179,7 +181,7 @@ func (db *Database) RemoveEvent(ctx context.Context, id string) error {
 // Relation
 // /////////////////////////////////////////////////////////////
 
-func (db *Database) AddRelations(ctx context.Context, relations ...*models.Relation) error {
+func (db *Database) AddRelations(ctx context.Context, relations []models.Relation) error {
 	updatedAt := types.Time{Time: time.Now()}
 
 	for i := range relations {
@@ -189,6 +191,7 @@ func (db *Database) AddRelations(ctx context.Context, relations ...*models.Relat
 
 	_, err := db.q.Insert(TableRelation).
 		Rows(relations).
+		OnConflict(goqu.DoNothing()).
 		Executor().ExecContext(ctx)
 	if err != nil {
 		return err
@@ -219,8 +222,8 @@ func (db *Database) GetRelationsCount(ctx context.Context, q *query.Query) (int6
 	return count, nil
 }
 
-func (db *Database) GetRelations(ctx context.Context, q *query.Query) ([]*models.Relation, error) {
-	var relations []*models.Relation
+func (db *Database) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
+	var relations []models.Relation
 
 	if err := adaptergoqu.Select(q, db.q.From(TableRelation)).Executor().ScanStructsContext(ctx, &relations); err != nil {
 		return nil, err

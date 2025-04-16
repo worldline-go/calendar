@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,18 +12,18 @@ import (
 	"github.com/worldline-go/query"
 	"github.com/worldline-go/types"
 
-	"github.com/worldline-go/calendar/pkg/ics"
+	"github.com/worldline-go/calendar/pkg/ical"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
 type Service struct {
 	db    Database
-	cache cache.Cacher[string, *ics.RRule]
+	cache cache.Cacher[string, *ical.Repeat]
 	m     sync.RWMutex
 }
 
 func New(ctx context.Context, db Database) (*Service, error) {
-	cache, err := cache.New[string, *ics.RRule](ctx,
+	cache, err := cache.New[string, *ical.Repeat](ctx,
 		memory.Store,
 		cache.WithStoreConfig(memory.Config{
 			MaxItems: 200,
@@ -48,8 +49,8 @@ func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, err
 // Database
 // //////////////////////////////////////////////////////////////
 
-func (s *Service) AddEvents(ctx context.Context, events ...*models.Event) error {
-	if err := s.db.AddEvents(ctx, events...); err != nil {
+func (s *Service) AddEvents(ctx context.Context, events ...models.Event) error {
+	if err := s.db.AddEvents(ctx, events); err != nil {
 		return err
 	}
 
@@ -74,11 +75,10 @@ func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (uint64, e
 	return count, nil
 }
 
-func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Event, error) {
+func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error) {
 	if q.HasAny("date") {
-		var events []*models.Event
+		var events []models.Event
 
-		dateCheck := false
 		qDateCheck := types.Time{}
 		if qDate, _ := q.Values["date"]; len(qDate) > 0 {
 			qDateStr, ok := qDate[0].Value.(string)
@@ -88,31 +88,47 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Even
 			if err := qDateCheck.Parse(qDateStr); err != nil {
 				return nil, fmt.Errorf("invalid date format: %w", err)
 			}
-
-			dateCheck = true
 		}
 
-		err := s.db.GetEventsWithFunc(ctx, q, func(h *models.Event) error {
+		err := s.db.GetEventsWithFunc(ctx, q, func(h models.Event) error {
 			if h.Disabled {
 				return nil
 			}
 
-			icsRule, err := s.getRRule(ctx, h.RRule)
+			if strings.TrimSpace(h.RRule) == "" {
+				if !qDateCheck.Time.Before(h.DateFrom.Time) && qDateCheck.Time.Before(h.DateTo.Time) {
+					events = append(events, h)
+				}
+
+				return nil
+			}
+
+			icsRepeat, err := s.getRRule(ctx, h.RRule)
 			if err != nil {
 				return fmt.Errorf("failed to get rrule: %w", err)
 			}
 
-			if dateCheck {
-				start, stop, ok := ics.MatchRRuleAt(icsRule, h.DateFrom.Time, h.DateTo.Time, qDateCheck.Time)
+			for _, rrule := range icsRepeat.RRule {
+				start, stop, ok := ical.MatchRRuleAt(rrule, h.DateFrom.Time, h.DateTo.Time, qDateCheck.Time)
 				if !ok {
 					return nil
 				}
 
 				h.DateFrom.Time = start
 				h.DateTo.Time = stop
+
+				events = append(events, h)
 			}
 
-			events = append(events, h)
+			for _, yearFn := range icsRepeat.Func {
+				newDate := yearFn(qDateCheck.Year())
+				h.DateFrom.Time = newDate
+				h.DateTo.Time = h.DateFrom.Time.AddDate(0, 0, 1)
+
+				if !qDateCheck.Time.Before(h.DateFrom.Time) && qDateCheck.Time.Before(h.DateTo.Time) {
+					events = append(events, h)
+				}
+			}
 
 			return nil
 		})
@@ -123,12 +139,12 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]*models.Even
 		return events, nil
 	}
 
-	holidays, err := s.db.GetEvents(ctx, q)
+	events, err := s.db.GetEvents(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 
-	return holidays, nil
+	return events, nil
 }
 
 func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error) {
@@ -151,10 +167,10 @@ func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Even
 
 // ///////////////////////////////////////////////////////////////
 // Relations
-// //////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddRelations(ctx context.Context, relations ...*models.Relation) error {
-	if err := s.db.AddRelations(ctx, relations...); err != nil {
+func (s *Service) AddRelations(ctx context.Context, relations ...models.Relation) error {
+	if err := s.db.AddRelations(ctx, relations); err != nil {
 		return err
 	}
 
@@ -179,7 +195,7 @@ func (s *Service) GetRelation(ctx context.Context, id string) (*models.Relation,
 	return relation, nil
 }
 
-func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]*models.Relation, error) {
+func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
 	relations, err := s.db.GetRelations(ctx, q)
 	if err != nil {
 		return nil, err
@@ -195,4 +211,39 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64,
 	}
 
 	return count, nil
+}
+
+// ///////////////////////////////////////////////////////////////
+// iCal
+// ///////////////////////////////////////////////////////////////
+
+func (s *Service) AddIcal(ctx context.Context, data []byte, relation models.Relation, tz string) error {
+	events, err := ical.ParseICS(data, tz)
+	if err != nil {
+		return fmt.Errorf("failed to parse ics: %w", err)
+	}
+
+	if err := s.db.AddEvents(ctx, events); err != nil {
+		return fmt.Errorf("failed to add events: %w", err)
+	}
+
+	// add relations
+	if !relation.Code.Valid && !relation.Country.Valid {
+		return nil
+	}
+
+	relations := make([]models.Relation, 0, len(events))
+	for i := range events {
+		relations = append(relations, models.Relation{
+			EventID: events[i].ID,
+			Code:    relation.Code,
+			Country: relation.Country,
+		})
+	}
+
+	if err := s.db.AddRelations(ctx, relations); err != nil {
+		return fmt.Errorf("failed to add relations: %w", err)
+	}
+
+	return nil
 }
