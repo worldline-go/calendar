@@ -8,6 +8,7 @@ import (
 	"github.com/worldline-go/calendar/pkg/models"
 	"github.com/worldline-go/query"
 	"github.com/worldline-go/test/container"
+	"github.com/worldline-go/types"
 )
 
 var migrations = []string{
@@ -37,18 +38,22 @@ func (s *DatabaseSuite) TearDownSuite() {
 }
 
 func (s *DatabaseSuite) TestAddEvents() {
-	calendar := models.Event{
-		Name:        "New Year",
-		Description: "The most wonderful time of the year",
+	events := []models.Event{
+		{
+			Name:        "New Year",
+			Description: "The most wonderful time of the year",
+			DateFrom:    types.Time{Time: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)},
+			DateTo:      types.Time{Time: time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)},
+		},
 	}
 
-	err := s.db.AddEvents(s.T().Context(), []models.Event{calendar})
+	err := s.db.AddEvents(s.T().Context(), events)
 	s.Require().NoError(err)
 
 	parse, err := query.Parse("", query.WithExpressionCmp("id", query.ExpressionCmp{
 		Operator: query.OperatorEq,
 		Field:    "id",
-		Value:    calendar.ID,
+		Value:    events[0].ID,
 	}))
 	s.Require().NoError(err)
 
@@ -56,13 +61,13 @@ func (s *DatabaseSuite) TestAddEvents() {
 	s.Require().NoError(err)
 
 	s.Require().Len(result, 1)
-	s.Require().Equal(calendar.ID, result[0].ID)
-	s.Require().Equal(calendar.Name, result[0].Name)
-	s.Require().Equal(calendar.Description, result[0].Description)
-	s.Require().Equal(calendar.DateFrom, result[0].DateFrom)
-	s.Require().Equal(calendar.DateTo, result[0].DateTo)
-	s.Require().Equal(calendar.RRule, result[0].RRule)
-	s.Require().Equal(calendar.Disabled, result[0].Disabled)
-	s.Require().Equal(calendar.UpdatedAt.Truncate(time.Millisecond), result[0].UpdatedAt.Truncate(time.Millisecond))
-	s.Require().Equal(calendar.UpdatedBy, result[0].UpdatedBy)
+	s.Require().Equal(events[0].ID, result[0].ID)
+	s.Require().Equal(events[0].Name, result[0].Name)
+	s.Require().Equal(events[0].Description, result[0].Description)
+	s.Require().Equal(events[0].DateFrom.Local(), result[0].DateFrom.Local(), "DateFrom wrong")
+	s.Require().Equal(events[0].DateTo.Local(), result[0].DateTo.Local(), "DateTo wrong")
+	s.Require().Equal(events[0].RRule, result[0].RRule)
+	s.Require().Equal(events[0].Disabled, result[0].Disabled)
+	s.Require().Equal(events[0].UpdatedAt.Truncate(time.Millisecond), result[0].UpdatedAt.Truncate(time.Millisecond), "UpdatedAt wrong")
+	s.Require().Equal(events[0].UpdatedBy, result[0].UpdatedBy)
 }

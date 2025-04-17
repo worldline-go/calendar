@@ -33,6 +33,7 @@ func GenerateICS(events []models.Event) (string, error) {
 
 		if isAllDay {
 			// All-day event: DTSTART/DTEND in DATE format (YYYYMMDD)
+			b.WriteString("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n")
 			b.WriteString(fmt.Sprintf("DTSTART;VALUE=DATE:%s\r\n", from.Format("20060102")))
 			b.WriteString(fmt.Sprintf("DTEND;VALUE=DATE:%s\r\n", to.Format("20060102")))
 		} else {
@@ -78,29 +79,43 @@ func ParseICS(data []byte, tz string) ([]models.Event, error) {
 	var e models.Event
 	inEvent := false
 
+	var current string
 	for _, line := range lines {
-		line = strings.TrimSpace(line)
 		if line == "BEGIN:VEVENT" {
 			inEvent = true
 			e = models.Event{}
+			current = ""
 			continue
 		}
 		if line == "END:VEVENT" && inEvent {
 			inEvent = false
 			events = append(events, e)
+			current = ""
 			continue
 		}
 		if !inEvent {
+			current = ""
 			continue
 		}
 
-		if strings.HasPrefix(line, "UID:") {
+		if strings.HasPrefix(line, " ") {
+			switch current {
+			case "DESCRIPTION":
+				e.Description += unescapeICS(strings.TrimSpace(line))
+			case "SUMMARY":
+				e.Name += unescapeICS(strings.TrimSpace(line))
+			}
+		} else if strings.HasPrefix(line, "UID:") {
 			e.ID = strings.TrimPrefix(line, "UID:")
+			current = "UID"
 		} else if strings.HasPrefix(line, "SUMMARY:") {
 			e.Name = unescapeICS(strings.TrimPrefix(line, "SUMMARY:"))
+			current = "SUMMARY"
 		} else if strings.HasPrefix(line, "DESCRIPTION:") {
 			e.Description = unescapeICS(strings.TrimPrefix(line, "DESCRIPTION:"))
+			current = "DESCRIPTION"
 		} else if strings.HasPrefix(line, "DTSTART") {
+			current = ""
 			v := line[strings.Index(line, ":")+1:]
 			if strings.Contains(line, ";VALUE=DATE") {
 				e.DateFrom.Time = TimeParse("20060102", v, defaultTZ)
@@ -124,6 +139,7 @@ func ParseICS(data []byte, tz string) ([]models.Event, error) {
 				e.DateFrom.Time = TimeParse("20060102T150405Z", v, defaultTZ)
 			}
 		} else if strings.HasPrefix(line, "DTEND") {
+			current = ""
 			v := line[strings.Index(line, ":")+1:]
 			if strings.Contains(line, ";VALUE=DATE") {
 				e.DateTo.Time = TimeParse("20060102", v, defaultTZ)
@@ -148,6 +164,7 @@ func ParseICS(data []byte, tz string) ([]models.Event, error) {
 			}
 		} else if strings.HasPrefix(line, "RRULE:") {
 			e.RRule = strings.TrimPrefix(line, "RRULE:")
+			current = ""
 		}
 	}
 
