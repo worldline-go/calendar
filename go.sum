@@ -408,8 +408,8 @@ github.com/worldline-go/klient v0.9.8 h1:tnTtPHjqN9kR76E6wgkZjafKFaxlg+4L4BlGxL5
 github.com/worldline-go/klient v0.9.8/go.mod h1:vXemhPgwAc2ueG8n3ioNvbcCE3GIqHfVPLWGj18ZPII=
 github.com/worldline-go/logz v0.5.1 h1:jpbKUd1FbecEzs7/p1zFH7tFtQ5demmc89Fa2YTHL/Q=
 github.com/worldline-go/logz v0.5.1/go.mod h1:CbiHbwLTA6oKud62HbmfwG5fgSZ6ppVbkSdRv44X8Vc=
-github.com/worldline-go/query v0.1.4 h1:oMNQngRwSIRkzUb7bNvvUwbZdWqJYDgI2EyNkJIklyE=
-github.com/worldline-go/query v0.1.4/go.mod h1:4B+YZ5RgoiZ4GT39wfpCWUDEB6Ve0HX3FCiIlmMiUec=
+github.com/worldline-go/query v0.1.5 h1:96H38XD0sYYtoHRw/Qzuuf8O2GxQDN0LMdzisPwYhUU=
+github.com/worldline-go/query v0.1.5/go.mod h1:4B+YZ5RgoiZ4GT39wfpCWUDEB6Ve0HX3FCiIlmMiUec=
 github.com/worldline-go/rest v0.1.3 h1:opzBlqVvYh+gClFIxQKRUKZHyL9GZI4Bvejtq+Nui3g=
 github.com/worldline-go/rest v0.1.3/go.mod h1:ucWlN5IsYjLloNSTBGw/B5lrPr4SHQupvI+eJ7orj5E=
 github.com/worldline-go/struct2 v1.3.1 h1:YPO4PptJCM+Qu0i2qjHGpDjVVjANijD2XyDnyR6xIhw=

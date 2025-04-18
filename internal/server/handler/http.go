@@ -42,7 +42,8 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 
 	validatorGetEventsDate, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("code", "country", "date")),
+		query.WithValues(query.WithIn("code", "country", "date", "duration")),
+		query.WithValue("duration", query.WithOperator(query.OperatorEq)),
 		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("date", query.WithOperator(query.OperatorEq), query.WithNotEmpty()),
@@ -53,8 +54,7 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 
 	validatorGetICS, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("code", "country", "year", "tz")),
-		query.WithValue("tz", query.WithOperator(query.OperatorEq)),
+		query.WithValues(query.WithIn("code", "country", "year")),
 		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("year", query.WithOperator(query.OperatorEq, query.OperatorIn)),
@@ -365,6 +365,7 @@ func (h *HTTP) GetRelation(c echo.Context) error {
 // @Param code query int false "code for relation"
 // @Param country query string false "country for relation"
 // @Param date query string true "date specific event"
+// @Param duration query string false "duration like 1d, 2w, 1h, 1m"
 // @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
@@ -374,7 +375,7 @@ func (h *HTTP) WorkDay(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetEventsDate,
-		query.WithSkipExpressionCmp("date"),
+		query.WithSkipExpressionCmp("date", "duration"),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

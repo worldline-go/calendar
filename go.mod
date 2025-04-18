@@ -18,7 +18,7 @@ require (
 	github.com/worldline-go/initializer v0.5.0
 	github.com/worldline-go/klient v0.9.8
 	github.com/worldline-go/logz v0.5.1
-	github.com/worldline-go/query v0.1.4
+	github.com/worldline-go/query v0.1.5
 	github.com/worldline-go/rest v0.1.3
 	github.com/worldline-go/swagger v1.0.0
 	github.com/worldline-go/tell v0.6.0

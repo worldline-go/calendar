@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateICS(t *testing.T) {
+	tzIstanbul, _ := time.LoadLocation("Europe/Istanbul")
 	type args struct {
 		events []models.Event
 	}
@@ -27,8 +28,8 @@ func TestGenerateICS(t *testing.T) {
 					{
 						Name:        "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı",
 						Description: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı",
-						DateFrom:    types.Time{Time: time.Date(2023, 4, 23, 0, 0, 0, 0, time.UTC)},
-						DateTo:      types.Time{Time: time.Date(2023, 4, 24, 0, 0, 0, 0, time.UTC)},
+						DateFrom:    types.Time{Time: time.Date(2023, 4, 23, 0, 0, 0, 0, tzIstanbul)},
+						DateTo:      types.Time{Time: time.Date(2023, 4, 24, 0, 0, 0, 0, tzIstanbul)},
 						RRule:       "FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=23",
 						Disabled:    false,
 						UpdatedAt:   types.Time{Time: time.Now()},
@@ -71,7 +72,6 @@ func TestGenerateICS(t *testing.T) {
 }
 
 func TestParseICS(t *testing.T) {
-	// tzIstanbul := time.FixedZone("Europe/Istanbul", 3*60*60)
 	tzIstanbul, _ := time.LoadLocation("Europe/Istanbul")
 	type args struct {
 		data []byte
@@ -112,6 +112,7 @@ END:VEVENT
 					Description: "National holiday -  Türkiye'de pek çok kişi her yıl 19 Mayıs'ta Atatürk Anma, Gençlik ve Spor Günü'nü spor etkinliklerine katılarak ve bu gün 1919 yılında başlayan Kurtuluş Savaşı'nı hatırlayarak kutlamaktadır.",
 					DateFrom:    types.Time{Time: time.Date(2024, 5, 19, 0, 0, 0, 0, tzIstanbul)},
 					DateTo:      types.Time{Time: time.Date(2024, 5, 20, 0, 0, 0, 0, tzIstanbul)},
+					TZone:       "Europe/Istanbul",
 					RRule:       "",
 					Disabled:    false,
 				},
