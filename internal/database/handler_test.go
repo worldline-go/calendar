@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/worldline-go/calendar/pkg/models"
 	"github.com/worldline-go/query"
-	"github.com/worldline-go/test/container"
+	"github.com/worldline-go/test/container/containerpostgres"
 	"github.com/worldline-go/types"
 )
 
@@ -18,12 +18,12 @@ var migrations = []string{
 
 type DatabaseSuite struct {
 	suite.Suite
-	container *container.PostgresContainer
+	container *containerpostgres.Container
 	db        *Database
 }
 
 func (s *DatabaseSuite) SetupSuite() {
-	s.container = container.Postgres(s.T())
+	s.container = containerpostgres.New(s.T())
 	s.container.ExecuteFiles(s.T(), migrations)
 
 	s.db = newDB(s.container.Sqlx(), "public")

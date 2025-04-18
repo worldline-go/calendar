@@ -95,51 +95,11 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "AddEvent",
+                "description": "AddEvents",
                 "tags": [
                     "Events"
                 ],
-                "summary": "AddEvent",
-                "parameters": [
-                    {
-                        "description": "Event",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Response-string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/events-bulk": {
-            "post": {
-                "description": "AddEventsBulk",
-                "tags": [
-                    "Events"
-                ],
-                "summary": "AddEventsBulk",
+                "summary": "AddEvents",
                 "parameters": [
                     {
                         "description": "Event",
@@ -159,56 +119,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rest.Response-array_string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/events-date": {
-            "get": {
-                "description": "GetEvents for specific date",
-                "tags": [
-                    "Search"
-                ],
-                "summary": "GetEventsDate",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "code for relation",
-                        "name": "code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "date specific event",
-                        "name": "date",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
                         }
                     },
                     "400": {
@@ -301,6 +211,54 @@ const docTemplate = `{
             }
         },
         "/ics": {
+            "get": {
+                "description": "GetICS",
+                "tags": [
+                    "iCal"
+                ],
+                "summary": "GetICS",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "code for relation",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "country for relation",
+                        "name": "country",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "specific year events",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "AddICS",
                 "consumes": [
@@ -421,51 +379,11 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "AddRelation",
+                "description": "AddRelations",
                 "tags": [
                     "Relations"
                 ],
-                "summary": "AddRelation",
-                "parameters": [
-                    {
-                        "description": "Relation",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Response-string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/relations-bulk": {
-            "post": {
-                "description": "AddRelationBulk",
-                "tags": [
-                    "Relations"
-                ],
-                "summary": "AddRelationBulk",
+                "summary": "AddRelations",
                 "parameters": [
                     {
                         "description": "Relation",
@@ -578,37 +496,37 @@ const docTemplate = `{
         },
         "/workday": {
             "get": {
-                "description": "WorkDay",
+                "description": "GetEvents for specific date",
                 "tags": [
                     "Search"
                 ],
                 "summary": "WorkDay",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "date",
-                        "name": "date",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "country",
-                        "name": "country",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "code for relation",
                         "name": "code",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "country for relation",
+                        "name": "country",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "date specific event",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-string"
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
                         }
                     },
                     "400": {
@@ -791,20 +709,6 @@ const docTemplate = `{
                 },
                 "payload": {
                     "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
-                }
-            }
-        },
-        "rest.Response-string": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "$ref": "#/definitions/rest.Message"
-                },
-                "meta": {
-                    "$ref": "#/definitions/rest.Meta"
-                },
-                "payload": {
-                    "type": "string"
                 }
             }
         },

@@ -2,10 +2,10 @@ package handler
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/worldline-go/types"
 
 	"github.com/worldline-go/calendar/internal/service"
+	"github.com/worldline-go/calendar/pkg/ical"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
@@ -27,6 +28,7 @@ type HTTP struct {
 type QueryValidator struct {
 	GetEvents     *query.Validator
 	GetEventsDate *query.Validator
+	GetICS        *query.Validator
 }
 
 func NewHTTP(svc *service.Service) (*HTTP, error) {
@@ -49,19 +51,30 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 		return nil, fmt.Errorf("failed to create validator for GetEventsDate: %w", err)
 	}
 
+	validatorGetICS, err := query.NewValidator(
+		query.WithField(query.WithNotAllowed()),
+		query.WithValues(query.WithIn("code", "country", "year")),
+		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("year", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator for GetICS: %w", err)
+	}
+
 	return &HTTP{
 		Service: svc,
 		Validator: QueryValidator{
 			GetEvents:     validatorGetEvents,
 			GetEventsDate: validatorGetEventsDate,
+			GetICS:        validatorGetICS,
 		},
 	}, nil
 }
 
 func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.GET("/events", h.GetEvents)
-	g.POST("/events", h.AddEvent)
-	g.POST("/events-bulk", h.AddEventsBulk)
+	g.POST("/events", h.AddEvents)
 
 	g.GET("/events/{id}", h.GetEvent)
 	g.DELETE("/events/{id}", h.RemoveEvent)
@@ -69,15 +82,14 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.PATCH("/events/{id}", h.RemoveEvent)
 
 	g.GET("/relations", h.GetRelations)
-	g.POST("/relations", h.AddRelation)
-	g.POST("/relations-bulk", h.AddRelationBulk)
+	g.POST("/relations", h.AddRelations)
 
 	g.GET("/relations/{id}", h.GetRelation)
 	g.DELETE("/relations/{id}", h.RemoveRelation)
 
 	g.GET("/workday", h.WorkDay)
-	g.GET("/events-date", h.GetEventsDate)
 	g.POST("/ics", h.AddICS)
+	g.GET("/ics", h.GetICS)
 }
 
 // @Summary GetEvents
@@ -128,84 +140,18 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 	})
 }
 
-// @Summary GetEventsDate
-// @Description GetEvents for specific date
-// @Param code query int false "code for relation"
-// @Param country query string false "country for relation"
-// @Param date query string true "date specific event"
-// @Success 200 {object} rest.Response[[]models.Event]
-// @Failure 400 {object} rest.ResponseMessage
-// @Failure 500 {object} rest.ResponseMessage
-// @Router /events-date [get]
-// @Tags Search
-func (h *HTTP) GetEventsDate(c echo.Context) error {
-	q, err := query.ParseWithValidator(
-		c.QueryString(),
-		h.Validator.GetEventsDate,
-		query.WithSkipExpressionCmp("date"),
-	)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	events, err := h.Service.GetEvents(c.Request().Context(), q)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-	if len(events) == 0 {
-		return echo.NewHTTPError(http.StatusNotFound, "no events found")
-	}
-
-	return c.JSON(http.StatusOK, rest.Response[[]models.Event]{
-		Meta: &rest.Meta{
-			TotalItemCount: uint64(len(events)),
-			Limit:          q.GetLimit(),
-			Offset:         q.GetOffset(),
-		},
-		Payload: events,
-	})
-}
-
-// @Summary AddEvent
-// @Description AddEvent
-// @Param body body models.Event true "Event"
-// @Success 200 {object} rest.Response[string]
-// @Failure 400 {object} rest.ResponseMessage
-// @Failure 500 {object} rest.ResponseMessage
-// @Router /events [post]
-// @Tags Events
-func (h *HTTP) AddEvent(c echo.Context) error {
-	v := models.Event{}
-	if err := c.Bind(&v); err != nil {
-		return err
-	}
-
-	v.UpdatedBy = server.GetUser(c)
-
-	if err := h.Service.AddEvents(c.Request().Context(), v); err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, rest.Response[string]{
-		Message: &rest.Message{
-			Text: "Holiday added",
-		},
-		Payload: v.ID,
-	})
-}
-
-// @Summary AddEventsBulk
-// @Description AddEventsBulk
+// @Summary AddEvents
+// @Description AddEvents
 // @Param body body []models.Event true "Event"
 // @Success 200 {object} rest.Response[[]string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /events-bulk [post]
+// @Router /events [post]
 // @Tags Events
-func (h *HTTP) AddEventsBulk(c echo.Context) error {
+func (h *HTTP) AddEvents(c echo.Context) error {
 	v := []models.Event{}
-	if err := c.Bind(&v); err != nil {
-		return err
+	if err := rest.BindJSONList(c.Request().Body, &v); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	updatedBy := server.GetUser(c)
@@ -213,7 +159,7 @@ func (h *HTTP) AddEventsBulk(c echo.Context) error {
 		v[i].UpdatedBy = updatedBy
 	}
 
-	if err := h.Service.AddEvents(c.Request().Context(), v...); err != nil {
+	if err := h.Service.AddEvents(c.Request().Context(), v); err != nil {
 		return err
 	}
 
@@ -282,46 +228,18 @@ func (h *HTTP) RemoveEvent(c echo.Context) error {
 // Relations
 // /////////////////////////////////////////////////////////////
 
-// @Summary AddRelation
-// @Description AddRelation
-// @Param body body models.Relation true "Relation"
-// @Success 200 {object} rest.Response[string]
-// @Failure 400 {object} rest.ResponseMessage
-// @Failure 500 {object} rest.ResponseMessage
-// @Router /relations [post]
-// @Tags Relations
-func (h *HTTP) AddRelation(c echo.Context) error {
-	v := models.Relation{}
-	if err := c.Bind(&v); err != nil {
-		return err
-	}
-
-	v.UpdatedBy = server.GetUser(c)
-
-	if err := h.Service.AddRelations(c.Request().Context(), v); err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, rest.Response[string]{
-		Message: &rest.Message{
-			Text: "Relation added",
-		},
-		Payload: v.ID,
-	})
-}
-
-// @Summary AddRelationBulk
-// @Description AddRelationBulk
+// @Summary AddRelations
+// @Description AddRelations
 // @Param body body []models.Relation true "Relation"
 // @Success 200 {object} rest.Response[[]string]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /relations-bulk [post]
+// @Router /relations [post]
 // @Tags Relations
-func (h *HTTP) AddRelationBulk(c echo.Context) error {
+func (h *HTTP) AddRelations(c echo.Context) error {
 	v := []models.Relation{}
-	if err := c.Bind(&v); err != nil {
-		return err
+	if err := rest.BindJSONList(c.Request().Body, &v); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	updatedBy := server.GetUser(c)
@@ -329,7 +247,7 @@ func (h *HTTP) AddRelationBulk(c echo.Context) error {
 		v[i].UpdatedBy = updatedBy
 	}
 
-	if err := h.Service.AddRelations(c.Request().Context(), v...); err != nil {
+	if err := h.Service.AddRelations(c.Request().Context(), v); err != nil {
 		return err
 	}
 
@@ -442,18 +360,41 @@ func (h *HTTP) GetRelation(c echo.Context) error {
 // ////////////////////////////////////////////////////////////////
 
 // @Summary WorkDay
-// @Description WorkDay
-// @Param date query string true "date"
-// @Param country query string false "country"
+// @Description GetEvents for specific date
 // @Param code query int false "code for relation"
-// @Success 200 {object} rest.Response[string]
+// @Param country query string false "country for relation"
+// @Param date query string true "date specific event"
+// @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /workday [get]
 // @Tags Search
 func (h *HTTP) WorkDay(c echo.Context) error {
+	q, err := query.ParseWithValidator(
+		c.QueryString(),
+		h.Validator.GetEventsDate,
+		query.WithSkipExpressionCmp("date"),
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
-	return nil
+	events, err := h.Service.GetEvents(c.Request().Context(), q)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	if len(events) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "no events found")
+	}
+
+	return c.JSON(http.StatusOK, rest.Response[[]models.Event]{
+		Meta: &rest.Meta{
+			TotalItemCount: uint64(len(events)),
+			Limit:          q.GetLimit(),
+			Offset:         q.GetOffset(),
+		},
+		Payload: events,
+	})
 }
 
 // @Summary AddICS
@@ -495,11 +436,6 @@ func (h *HTTP) AddICS(c echo.Context) error {
 	}
 	defer src.Close()
 
-	v, err := io.ReadAll(src)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read file: "+err.Error())
-	}
-
 	commonRelation := models.Relation{
 		Code:      codeNull,
 		Country:   countryNull,
@@ -507,8 +443,17 @@ func (h *HTTP) AddICS(c echo.Context) error {
 	}
 
 	tz := strings.TrimSpace(c.QueryParam("tz"))
+	defaultTZ := time.UTC
+	if tz != "" {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timezone: "+tz+" "+err.Error())
+		}
 
-	if err := h.Service.AddIcal(c.Request().Context(), v, commonRelation, tz); err != nil {
+		defaultTZ = loc
+	}
+
+	if err := h.Service.AddIcal(c.Request().Context(), src, commonRelation, defaultTZ); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add ICS: "+err.Error())
 	}
 
@@ -517,4 +462,45 @@ func (h *HTTP) AddICS(c echo.Context) error {
 			Text: "ICS added",
 		},
 	})
+}
+
+// @Summary GetICS
+// @Description GetICS
+// @Param code query int false "code for relation"
+// @Param country query string false "country for relation"
+// @Param year query int true "specific year events"
+// @Success 200 {object} rest.ResponseMessage
+// @Failure 400 {object} rest.ResponseMessage
+// @Failure 500 {object} rest.ResponseMessage
+// @Router /ics [get]
+// @Tags iCal
+func (h *HTTP) GetICS(c echo.Context) error {
+	q, err := query.ParseWithValidator(
+		c.QueryString(),
+		h.Validator.GetICS,
+		query.WithSkipExpressionCmp("year"),
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	events, err := h.Service.GetEvents(c.Request().Context(), q)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	// convert ics format
+	str, err := ical.GenerateICS(events)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	// send ics file
+	c.Response().Header().Set(echo.HeaderContentType, "text/calendar")
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=events.ics")
+	c.Response().WriteHeader(http.StatusOK)
+
+	_, err = c.Response().Write([]byte(str))
+
+	return err
 }

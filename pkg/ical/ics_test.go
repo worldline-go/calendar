@@ -1,6 +1,7 @@
 package ical
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 	"time"
@@ -104,7 +105,12 @@ END:VEVENT
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseICS(tt.args.data, tt.args.tz)
+			tz, err := time.LoadLocation(tt.args.tz)
+			if err != nil {
+				t.Fatalf("time.LoadLocation() error = %v", err)
+			}
+
+			got, err := ParseICS(bytes.NewReader(tt.args.data), tz)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseICS() error = %v, wantErr %v", err, tt.wantErr)
 				return

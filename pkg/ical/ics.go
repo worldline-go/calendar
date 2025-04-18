@@ -1,7 +1,9 @@
 package ical
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -64,23 +66,45 @@ func GenerateICS(events []models.Event) (string, error) {
 }
 
 // ParseICS parses ICS file data and returns a slice of models.Event.
-func ParseICS(data []byte, tz string) ([]models.Event, error) {
+func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 	defaultTZ := time.UTC
-	if tz != "" {
-		loc, err := time.LoadLocation(tz)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load location %s: %w", tz, err)
-		}
-		defaultTZ = loc
+	if tz != nil {
+		defaultTZ = tz
 	}
 
-	lines := strings.Split(string(data), "\n")
+	reader := bufio.NewReader(data)
 	var events []models.Event
 	var e models.Event
 	inEvent := false
 
 	var current string
-	for _, line := range lines {
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return nil, fmt.Errorf("failed to read line: %w", err)
+			}
+
+			break
+		}
+
+		if strings.HasPrefix(line, " ") {
+			switch current {
+			case "DESCRIPTION":
+				e.Description += unescapeICS(strings.TrimSpace(line))
+			case "SUMMARY":
+				e.Name += unescapeICS(strings.TrimSpace(line))
+			}
+
+			continue
+		}
+
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
 		if line == "BEGIN:VEVENT" {
 			inEvent = true
 			e = models.Event{}
@@ -98,14 +122,7 @@ func ParseICS(data []byte, tz string) ([]models.Event, error) {
 			continue
 		}
 
-		if strings.HasPrefix(line, " ") {
-			switch current {
-			case "DESCRIPTION":
-				e.Description += unescapeICS(strings.TrimSpace(line))
-			case "SUMMARY":
-				e.Name += unescapeICS(strings.TrimSpace(line))
-			}
-		} else if strings.HasPrefix(line, "UID:") {
+		if strings.HasPrefix(line, "UID:") {
 			e.ID = strings.TrimPrefix(line, "UID:")
 			current = "UID"
 		} else if strings.HasPrefix(line, "SUMMARY:") {

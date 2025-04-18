@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -49,7 +51,7 @@ func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, err
 // Database
 // //////////////////////////////////////////////////////////////
 
-func (s *Service) AddEvents(ctx context.Context, events ...models.Event) error {
+func (s *Service) AddEvents(ctx context.Context, events []models.Event) error {
 	if err := s.db.AddEvents(ctx, events); err != nil {
 		return err
 	}
@@ -139,6 +141,86 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 		return events, nil
 	}
 
+	if q.HasAny("year") {
+		var events []models.Event
+
+		qYearCheck := make(map[int]struct{})
+		if qYear, _ := q.Values["year"]; len(qYear) > 0 {
+			for _, v := range qYear {
+				if v.Value == nil {
+					continue
+				}
+
+				qYearStr, ok := v.Value.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid year format")
+				}
+
+				qYearInt, err := strconv.Atoi(qYearStr)
+				if err != nil {
+					return nil, fmt.Errorf("invalid year format: %w", err)
+				}
+
+				qYearCheck[qYearInt] = struct{}{}
+			}
+		}
+
+		err := s.db.GetEventsWithFunc(ctx, q, func(h models.Event) error {
+			if h.Disabled {
+				return nil
+			}
+
+			if strings.TrimSpace(h.RRule) == "" {
+				if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
+					events = append(events, h)
+				}
+
+				return nil
+			}
+
+			icsRepeat, err := s.getRRule(ctx, h.RRule)
+			if err != nil {
+				return fmt.Errorf("failed to get rrule: %w", err)
+			}
+
+			for _, rrule := range icsRepeat.RRule {
+				for year := range qYearCheck {
+					yearTime := time.Date(year, h.DateFrom.Time.Month(), h.DateFrom.Time.Day(), 0, 0, 0, 0, h.DateFrom.Time.Location())
+					start, stop, ok := ical.MatchRRuleAt(rrule, h.DateFrom.Time, h.DateTo.Time, yearTime)
+					if !ok {
+						return nil
+					}
+
+					h.DateFrom.Time = start
+					h.DateTo.Time = stop
+
+					if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
+						events = append(events, h)
+					}
+				}
+			}
+
+			for _, yearFn := range icsRepeat.Func {
+				for year := range qYearCheck {
+					newDate := yearFn(year)
+					h.DateFrom.Time = newDate
+					h.DateTo.Time = h.DateFrom.Time.AddDate(0, 0, 1)
+
+					if h.DateFrom.Year() == year {
+						events = append(events, h)
+					}
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return events, nil
+	}
+
 	events, err := s.db.GetEvents(ctx, q)
 	if err != nil {
 		return nil, err
@@ -169,7 +251,7 @@ func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Even
 // Relations
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddRelations(ctx context.Context, relations ...models.Relation) error {
+func (s *Service) AddRelations(ctx context.Context, relations []models.Relation) error {
 	if err := s.db.AddRelations(ctx, relations); err != nil {
 		return err
 	}
@@ -217,7 +299,7 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64,
 // iCal
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddIcal(ctx context.Context, data []byte, relation models.Relation, tz string) error {
+func (s *Service) AddIcal(ctx context.Context, data io.Reader, relation models.Relation, tz string) error {
 	events, err := ical.ParseICS(data, tz)
 	if err != nil {
 		return fmt.Errorf("failed to parse ics: %w", err)
