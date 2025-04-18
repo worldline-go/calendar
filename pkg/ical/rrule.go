@@ -27,11 +27,17 @@ type RRule struct {
 	ByMonth    []int
 	BySetPos   []int
 	Wkst       string
+
+	org string
+}
+
+func (r *RRule) Org() string {
+	return r.org
 }
 
 // ParseRRule parses an RRULE string into an RRule struct.
 func ParseRRule(s string) (*RRule, error) {
-	rule := &RRule{Interval: 1}
+	rule := &RRule{Interval: 1, org: s}
 	parts := strings.Split(s, ";")
 	for _, part := range parts {
 		if part == "" {
@@ -142,7 +148,6 @@ func nextFreq(t time.Time, freq string, interval int) time.Time {
 
 // MatchRRuleAt checks if the search time matches any occurrence of the RRule event.
 // Returns the start and stop time of the matching occurrence, and true if found.
-// Now considers BYSETPOS and WKST in addition to other BYxxx rules.
 func MatchRRuleAt(rrule *RRule, dtstart, dtend, search time.Time) (time.Time, time.Time, bool) {
 	if rrule == nil || rrule.Freq == "" {
 		return time.Time{}, time.Time{}, false
@@ -159,6 +164,11 @@ func MatchRRuleAt(rrule *RRule, dtstart, dtend, search time.Time) (time.Time, ti
 		until = *rrule.Until
 	}
 	occ := start
+	duration := time.Duration(0)
+	if !dtend.IsZero() {
+		duration = dtend.Sub(dtstart)
+	}
+
 	for occ.Before(until) || occ.Equal(until) {
 		// Generate all candidates for the current period (for BYSETPOS)
 		candidates := generateCandidatesForPeriod(rrule, occ)
@@ -167,11 +177,11 @@ func MatchRRuleAt(rrule *RRule, dtstart, dtend, search time.Time) (time.Time, ti
 			candidates = filterBySetPos(candidates, rrule.BySetPos)
 		}
 		for _, candidate := range candidates {
-			// All BYxxx rules (except BYSETPOS) are already applied in generateCandidatesForPeriod
 			occEnd := candidate
-			if !dtend.IsZero() {
-				occEnd = candidate.Add(dtend.Sub(dtstart))
+			if duration > 0 {
+				occEnd = candidate.Add(duration)
 			}
+			// Check if search is within this occurrence
 			if !search.Before(candidate) && search.Before(occEnd) {
 				return candidate, occEnd, true
 			}
@@ -183,6 +193,64 @@ func MatchRRuleAt(rrule *RRule, dtstart, dtend, search time.Time) (time.Time, ti
 		occ = nextFreq(occ, rrule.Freq, rrule.Interval)
 	}
 
+	return time.Time{}, time.Time{}, false
+}
+
+// MatchRRuleBetween returns the first occurrence (start and end) between dateFrom and dateTo, and true if found.
+func MatchRRuleBetween(rrule *RRule, dtstart, dtend, dateFrom, dateTo time.Time) (time.Time, time.Time, bool) {
+	if rrule == nil || rrule.Freq == "" {
+		return time.Time{}, time.Time{}, false
+	}
+
+	duration := time.Duration(0)
+	if !dtend.IsZero() {
+		duration = dtend.Sub(dtstart)
+	}
+
+	start := dtstart
+	count := 0
+	maxCount := -1
+	if rrule.Count != nil {
+		maxCount = *rrule.Count
+	}
+
+	until := dateTo
+	if rrule.Until != nil && rrule.Until.Before(until) {
+		until = *rrule.Until
+	}
+
+	occ := start
+	// Fast forward to the approximate first occurrence near dateFrom
+	for occ.Before(dateFrom) {
+		occ = nextFreq(occ, rrule.Freq, rrule.Interval)
+		count++
+		if maxCount > 0 && count >= maxCount {
+			return time.Time{}, time.Time{}, false
+		}
+	}
+	count = 0 // Reset count for actual iteration
+	for occ.Before(until) || occ.Equal(until) {
+		candidates := generateCandidatesForPeriod(rrule, occ)
+		if len(rrule.BySetPos) > 0 {
+			candidates = filterBySetPos(candidates, rrule.BySetPos)
+		}
+		for _, candidate := range candidates {
+			occEnd := candidate
+			if duration > 0 {
+				occEnd = candidate.Add(duration)
+			}
+			// Check if this occurrence overlaps with our date range
+			if (candidate.Before(dateTo) || candidate.Equal(dateTo)) &&
+				(occEnd.After(dateFrom) || occEnd.Equal(dateFrom)) {
+				return candidate, occEnd, true
+			}
+			count++
+			if maxCount > 0 && count >= maxCount {
+				return time.Time{}, time.Time{}, false
+			}
+		}
+		occ = nextFreq(occ, rrule.Freq, rrule.Interval)
+	}
 	return time.Time{}, time.Time{}, false
 }
 

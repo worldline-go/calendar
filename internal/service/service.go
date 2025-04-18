@@ -220,16 +220,19 @@ func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Ev
 		for _, rrule := range icsRepeat.RRule {
 			for year := range qYearCheck {
 				yearTime := time.Date(year, h.DateFrom.Time.Month(), h.DateFrom.Time.Day(), 0, 0, 0, 0, h.DateFrom.Time.Location())
-				start, stop, ok := ical.MatchRRuleAt(rrule, h.DateFrom.Time, h.DateTo.Time, yearTime)
+				start, stop, ok := ical.MatchRRuleBetween(rrule, h.DateFrom.Time, h.DateTo.Time, yearTime, yearTime.AddDate(1, 0, 0))
 				if !ok {
 					return nil
 				}
 
 				h.DateFrom.Time = start
 				h.DateTo.Time = stop
+				h.RRule = rrule.Org()
 
 				if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
 					events = append(events, h)
+					// one time add with rrule
+					break
 				}
 			}
 		}

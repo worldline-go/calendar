@@ -76,3 +76,76 @@ func TestMatchRRuleAt(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchRRuleBetween(t *testing.T) {
+	locationNewYork, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Fatalf("Failed to load location: %v", err)
+	}
+
+	type args struct {
+		rrule    *RRule
+		dtstart  time.Time
+		dtend    time.Time
+		dateFrom time.Time
+		dateTo   time.Time
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  time.Time
+		want1 time.Time
+		want2 bool
+	}{
+		{
+			name: "Atatürk'ü Anma Günü",
+			args: args{
+				rrule: &RRule{
+					Freq:  "YEARLY",
+					Count: func(v int) *int { return &v }(6),
+				},
+				dtstart:  time.Date(2021, 11, 10, 0, 0, 0, 0, locationNewYork),
+				dtend:    time.Date(2021, 11, 11, 0, 0, 0, 0, locationNewYork),
+				dateFrom: time.Date(2022, 1, 1, 0, 0, 0, 0, locationNewYork),
+				dateTo:   time.Date(2023, 1, 1, 0, 0, 0, 0, locationNewYork),
+			},
+			want:  time.Date(2021, 11, 10, 0, 0, 0, 0, locationNewYork),
+			want1: time.Date(2021, 11, 11, 0, 0, 0, 0, locationNewYork),
+			want2: true,
+		},
+		{
+			name: "U.S. Presidential Election",
+			args: args{
+				rrule: &RRule{
+					Freq:       "YEARLY",
+					Interval:   4,
+					ByMonth:    []int{11},
+					ByMonthDay: []int{2, 3, 4, 5, 6, 7, 8},
+					ByDay:      []string{"TU"},
+				},
+				dtstart:  time.Date(1996, 11, 5, 9, 0, 0, 0, locationNewYork),
+				dtend:    time.Date(1996, 11, 6, 0, 0, 0, 0, locationNewYork),
+				dateFrom: time.Date(2000, 1, 1, 0, 0, 0, 0, locationNewYork),
+				dateTo:   time.Date(2005, 1, 1, 0, 0, 0, 0, locationNewYork),
+			},
+			want:  time.Date(2000, 11, 7, 9, 0, 0, 0, locationNewYork),
+			want1: time.Date(2000, 11, 8, 0, 0, 0, 0, locationNewYork),
+			want2: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2 := MatchRRuleBetween(tt.args.rrule, tt.args.dtstart, tt.args.dtend, tt.args.dateFrom, tt.args.dateTo)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MatchRRuleBetween() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("MatchRRuleBetween() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("MatchRRuleBetween() got2 = %v, want %v", got2, tt.want2)
+			}
+		})
+	}
+}

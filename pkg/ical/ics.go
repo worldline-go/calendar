@@ -36,7 +36,10 @@ func GenerateICS(events []models.Event, category string) (string, error) {
 			b.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", name))
 		}
 
-		b.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(e.Description)))
+		description := escapeICS(e.Description)
+		if description != "" {
+			b.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", description))
+		}
 
 		from := e.DateFrom.Time
 		to := e.DateTo.Time
@@ -208,7 +211,7 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 				e.DateTo.Time = TimeParse("20060102T150405Z", v, defaultTZ)
 			}
 		} else if strings.HasPrefix(line, "RRULE:") {
-			e.RRule = strings.TrimPrefix(line, "RRULE:")
+			e.RRule = line
 			current = ""
 		}
 	}

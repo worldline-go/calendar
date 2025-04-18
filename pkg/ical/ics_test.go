@@ -59,7 +59,7 @@ func TestGenerateICS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GenerateICS(tt.args.events)
+			got, err := GenerateICS(tt.args.events, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateICS() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -112,7 +112,7 @@ END:VEVENT
 					Description: "National holiday -  Türkiye'de pek çok kişi her yıl 19 Mayıs'ta Atatürk Anma, Gençlik ve Spor Günü'nü spor etkinliklerine katılarak ve bu gün 1919 yılında başlayan Kurtuluş Savaşı'nı hatırlayarak kutlamaktadır.",
 					DateFrom:    types.Time{Time: time.Date(2024, 5, 19, 0, 0, 0, 0, tzIstanbul)},
 					DateTo:      types.Time{Time: time.Date(2024, 5, 20, 0, 0, 0, 0, tzIstanbul)},
-					Tz:       "Europe/Istanbul",
+					Tz:          "Europe/Istanbul",
 					RRule:       "",
 					Disabled:    false,
 				},
