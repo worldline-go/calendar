@@ -6,6 +6,7 @@ CREATE TABLE if NOT EXISTS calendar_events (
     date_from timestamp with time zone NOT NULL,
     date_to timestamp with time zone NOT NULL,
     tz text NOT NULL DEFAULT '',
+    all_day boolean NOT NULL DEFAULT false,
 
     rrule text NOT NULL DEFAULT '',
 
@@ -30,3 +31,6 @@ COMMENT ON COLUMN calendar_events.disabled IS
 
 COMMENT ON COLUMN calendar_events.tz IS
 'Timezone of the event for getting back the original zone.';
+
+COMMENT ON COLUMN calendar_events.all_day IS
+'If the event is all day, it will be considered as all-day event on ical format.';

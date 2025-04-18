@@ -234,8 +234,7 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "specific year events",
                         "name": "year",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -520,6 +519,12 @@ const docTemplate = `{
                         "name": "date",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "duration like 1d, 2w, 1h, 1m",
+                        "name": "duration",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -549,6 +554,9 @@ const docTemplate = `{
         "github_com_worldline-go_calendar_pkg_models.Event": {
             "type": "object",
             "properties": {
+                "all_day": {
+                    "type": "boolean"
+                },
                 "date_from": {
                     "type": "string"
                 },

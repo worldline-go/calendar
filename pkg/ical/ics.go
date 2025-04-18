@@ -8,30 +8,45 @@ import (
 	"time"
 
 	"github.com/worldline-go/calendar/pkg/models"
+	"github.com/worldline-go/types"
 )
 
 // GenerateICS generates an iCalendar (ICS) file content from a list of events.
-func GenerateICS(events []models.Event) (string, error) {
+func GenerateICS(events []models.Event, category string) (string, error) {
 	var b strings.Builder
 	b.WriteString("BEGIN:VCALENDAR\r\n")
 	b.WriteString("VERSION:2.0\r\n")
 	b.WriteString("PRODID:-//worldline-go//calendar//EN\r\n")
 
+	if category == "" {
+		category = "Holidays"
+	}
+
 	for _, e := range events {
 		b.WriteString("BEGIN:VEVENT\r\n")
 		b.WriteString(fmt.Sprintf("UID:%s\r\n", e.ID))
-		b.WriteString("CATEGORIES:Holidays\r\n")
+		b.WriteString(fmt.Sprintf("CATEGORIES:%s\r\n", category))
 		b.WriteString("CLASS:public\r\n")
 		b.WriteString("STATUS:CONFIRMED\r\n")
-		b.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", escapeICS(e.Name)))
+
+		name := escapeICS(e.Name)
+		if strings.HasPrefix(name, "LANGUAGE=") {
+			b.WriteString(fmt.Sprintf("SUMMARY;%s\r\n", name))
+		} else {
+			b.WriteString(fmt.Sprintf("SUMMARY:%s\r\n", name))
+		}
+
 		b.WriteString(fmt.Sprintf("DESCRIPTION:%s\r\n", escapeICS(e.Description)))
 
 		from := e.DateFrom.Time
 		to := e.DateTo.Time
 
-		isAllDay := from.Hour() == 0 && from.Minute() == 0 && from.Second() == 0 &&
-			to.Hour() == 0 && to.Minute() == 0 && to.Second() == 0 &&
-			to.Sub(from) == 24*time.Hour
+		isAllDay := false
+		if e.AllDay {
+			isAllDay = from.Hour() == 0 && from.Minute() == 0 && from.Second() == 0 &&
+				to.Hour() == 0 && to.Minute() == 0 && to.Second() == 0 &&
+				to.Sub(from) == 24*time.Hour
+		}
 
 		if isAllDay {
 			// All-day event: DTSTART/DTEND in DATE format (YYYYMMDD)
@@ -114,7 +129,11 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 		}
 		if line == "END:VEVENT" && inEvent {
 			inEvent = false
-			e.TZone = defaultTZ.String()
+			e.Tz = defaultTZ.String()
+			if e.DateTo.Time.IsZero() {
+				e.DateTo = types.Time{Time: e.DateFrom.AddDate(0, 0, 1)}
+			}
+
 			events = append(events, e)
 			current = ""
 
@@ -132,6 +151,9 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 		} else if strings.HasPrefix(line, "SUMMARY:") {
 			e.Name = unescapeICS(strings.TrimPrefix(line, "SUMMARY:"))
 			current = "SUMMARY"
+		} else if strings.HasPrefix(line, "SUMMARY;") {
+			e.Name = unescapeICS(strings.TrimPrefix(line, "SUMMARY;"))
+			current = "SUMMARY"
 		} else if strings.HasPrefix(line, "DESCRIPTION:") {
 			e.Description = unescapeICS(strings.TrimPrefix(line, "DESCRIPTION:"))
 			current = "DESCRIPTION"
@@ -140,6 +162,7 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 			v := line[strings.Index(line, ":")+1:]
 			if strings.Contains(line, ";VALUE=DATE") {
 				e.DateFrom.Time = TimeParse("20060102", v, defaultTZ)
+				e.AllDay = true
 			} else if strings.Contains(line, "TZID=") {
 				tzidStart := strings.Index(line, "TZID=") + len("TZID=")
 				tzidEnd := strings.Index(line, ":")
@@ -164,6 +187,7 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 			v := line[strings.Index(line, ":")+1:]
 			if strings.Contains(line, ";VALUE=DATE") {
 				e.DateTo.Time = TimeParse("20060102", v, defaultTZ)
+				e.AllDay = true
 			} else if strings.Contains(line, "TZID=") {
 				tzidStart := strings.Index(line, "TZID=") + len("TZID=")
 				tzidEnd := strings.Index(line, ":")

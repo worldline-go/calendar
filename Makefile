@@ -32,7 +32,7 @@ build: ## Build the binary
 .PHONY: docs
 docs: ## Generate Swagger documentation
 	go mod download -x
-	swag init -pd -g internal/server/server.go -o internal/server/docs
+	go tool swag init -pd -g internal/server/server.go -o internal/server/docs
 
 .PHONY: lint
 lint: ## Lint Go files

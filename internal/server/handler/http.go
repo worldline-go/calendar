@@ -470,7 +470,7 @@ func (h *HTTP) AddICS(c echo.Context) error {
 // @Description GetICS
 // @Param code query int false "code for relation"
 // @Param country query string false "country for relation"
-// @Param year query int true "specific year events"
+// @Param year query int false "specific year events"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
@@ -486,13 +486,13 @@ func (h *HTTP) GetICS(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	events, err := h.Service.GetEvents(c.Request().Context(), q)
+	events, err := h.Service.GetEventsICS(c.Request().Context(), q)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	// convert ics format
-	str, err := ical.GenerateICS(events)
+	str, err := ical.GenerateICS(events, "Holidays")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}

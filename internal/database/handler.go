@@ -67,6 +67,7 @@ func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
 			TableEventsStr+".date_from",
 			TableEventsStr+".date_to",
 			TableEventsStr+".tz",
+			TableEventsStr+".all_day",
 			TableEventsStr+".rrule",
 			TableEventsStr+".disabled",
 			TableEventsStr+".updated_at",
