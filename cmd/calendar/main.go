@@ -67,9 +67,6 @@ func run(ctx context.Context) error {
 	// ///////////////////////////////////////////////////////
 	// start server
 	initializer.ShutdownAdd(srv.Stop, "server")
-	if err := srv.Start(fmt.Sprintf(":%d", cfg.Port)); err != nil {
-		return fmt.Errorf("failed to start server: %w", err)
-	}
 
-	return nil
+	return srv.Start(fmt.Sprintf(":%d", cfg.Port))
 }

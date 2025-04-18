@@ -12,6 +12,7 @@ type Event struct {
 
 	DateFrom types.Time `db:"date_from" json:"date_from" swaggertype:"string"`
 	DateTo   types.Time `db:"date_to"   json:"date_to"   swaggertype:"string"`
+	TZone    string     `db:"tz"        json:"tz"`
 
 	RRule    string `db:"rrule"    json:"rrule"`
 	Disabled bool   `db:"disabled" json:"disabled"`

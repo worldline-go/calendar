@@ -5,6 +5,7 @@ CREATE TABLE if NOT EXISTS calendar_events (
 
     date_from timestamp with time zone NOT NULL,
     date_to timestamp with time zone NOT NULL,
+    tz text NOT NULL DEFAULT '',
 
     rrule text NOT NULL DEFAULT '',
 
@@ -26,3 +27,6 @@ COMMENT ON COLUMN calendar_events.date_from IS
 
 COMMENT ON COLUMN calendar_events.disabled IS
 'If the event is disabled, it will not be considered.';
+
+COMMENT ON COLUMN calendar_events.tz IS
+'Timezone of the event for getting back the original zone.';

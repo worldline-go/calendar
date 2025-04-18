@@ -19,13 +19,14 @@ import (
 )
 
 type Service struct {
-	db    Database
-	cache cache.Cacher[string, *ical.Repeat]
-	m     sync.RWMutex
+	db        Database
+	cacheRule cache.Cacher[string, *ical.Repeat]
+	cacheTZ   cache.Cacher[string, *time.Location]
+	m         sync.RWMutex
 }
 
 func New(ctx context.Context, db Database) (*Service, error) {
-	cache, err := cache.New[string, *ical.Repeat](ctx,
+	cacheRule, err := cache.New[string, *ical.Repeat](ctx,
 		memory.Store,
 		cache.WithStoreConfig(memory.Config{
 			MaxItems: 200,
@@ -33,12 +34,24 @@ func New(ctx context.Context, db Database) (*Service, error) {
 		}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cache: %w", err)
+		return nil, fmt.Errorf("failed to create cacheRule: %w", err)
+	}
+
+	cacheTZ, err := cache.New[string, *time.Location](ctx,
+		memory.Store,
+		cache.WithStoreConfig(memory.Config{
+			MaxItems: 200,
+			TTL:      30 * time.Minute,
+		}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cacheTZ: %w", err)
 	}
 
 	return &Service{
-		cache: cache,
-		db:    db,
+		cacheRule: cacheRule,
+		cacheTZ:   cacheTZ,
+		db:        db,
 	}, nil
 }
 
@@ -96,6 +109,8 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 			if h.Disabled {
 				return nil
 			}
+
+			s.tzTime(&h)
 
 			if strings.TrimSpace(h.RRule) == "" {
 				if !qDateCheck.Time.Before(h.DateFrom.Time) && qDateCheck.Time.Before(h.DateTo.Time) {
@@ -170,6 +185,8 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 				return nil
 			}
 
+			s.tzTime(&h)
+
 			if strings.TrimSpace(h.RRule) == "" {
 				if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
 					events = append(events, h)
@@ -229,13 +246,27 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 	return events, nil
 }
 
+func (s *Service) tzTime(h *models.Event) error {
+	tzLoc, err := s.TZLocation(h.TZone)
+	if err != nil {
+		return fmt.Errorf("failed to get timezone location: %w", err)
+	}
+
+	h.DateFrom = types.Time{Time: h.DateFrom.In(tzLoc)}
+	h.DateTo = types.Time{Time: h.DateTo.In(tzLoc)}
+
+	return nil
+}
+
 func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error) {
-	holiday, err := s.db.GetEvent(ctx, id)
+	h, err := s.db.GetEvent(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return holiday, nil
+	s.tzTime(h)
+
+	return h, nil
 }
 
 func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Event) error {

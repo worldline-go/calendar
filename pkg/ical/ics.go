@@ -109,16 +109,20 @@ func ParseICS(data io.Reader, tz *time.Location) ([]models.Event, error) {
 			inEvent = true
 			e = models.Event{}
 			current = ""
+
 			continue
 		}
 		if line == "END:VEVENT" && inEvent {
 			inEvent = false
+			e.TZone = defaultTZ.String()
 			events = append(events, e)
 			current = ""
+
 			continue
 		}
 		if !inEvent {
 			current = ""
+
 			continue
 		}
 

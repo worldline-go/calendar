@@ -236,12 +236,6 @@ const docTemplate = `{
                         "name": "year",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "timezone like Europe/Amsterdam",
-                        "name": "tz",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -574,6 +568,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "rrule": {
+                    "type": "string"
+                },
+                "tz": {
                     "type": "string"
                 },
                 "updated_at": {
