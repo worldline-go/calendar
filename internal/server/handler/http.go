@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -53,7 +54,8 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 
 	validatorGetICS, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("code", "country", "year")),
+		query.WithValues(query.WithIn("code", "country", "year", "tz")),
+		query.WithValue("tz", query.WithOperator(query.OperatorEq)),
 		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("year", query.WithOperator(query.OperatorEq, query.OperatorIn)),
@@ -469,6 +471,7 @@ func (h *HTTP) AddICS(c echo.Context) error {
 // @Param code query int false "code for relation"
 // @Param country query string false "country for relation"
 // @Param year query int true "specific year events"
+// @Param tz query string false "timezone like Europe/Amsterdam"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
@@ -478,15 +481,34 @@ func (h *HTTP) GetICS(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetICS,
-		query.WithSkipExpressionCmp("year"),
+		query.WithSkipExpressionCmp("year", "tz"),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	var tzLoc *time.Location
+	if tzCmp, _ := q.Values["tz"]; len(tzCmp) > 0 {
+		tz := tzCmp[0].Value.(string)
+		tz, _ = url.QueryUnescape(tz)
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid timezone: "+tz+" "+err.Error())
+		}
+
+		tzLoc = loc
+	}
+
 	events, err := h.Service.GetEvents(c.Request().Context(), q)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	if tzLoc != nil {
+		for i := range events {
+			events[i].DateFrom = types.Time{Time: events[i].DateFrom.In(tzLoc)}
+			events[i].DateTo = types.Time{Time: events[i].DateTo.In(tzLoc)}
+		}
 	}
 
 	// convert ics format

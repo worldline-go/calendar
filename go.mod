@@ -16,6 +16,7 @@ require (
 	github.com/worldline-go/igconfig v0.3.0
 	github.com/worldline-go/igmigrator/v2 v2.4.0
 	github.com/worldline-go/initializer v0.5.0
+	github.com/worldline-go/klient v0.9.8
 	github.com/worldline-go/logz v0.5.1
 	github.com/worldline-go/query v0.1.4
 	github.com/worldline-go/rest v0.1.3
@@ -72,7 +73,7 @@ require (
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.6 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.6 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect

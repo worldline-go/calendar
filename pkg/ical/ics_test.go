@@ -36,7 +36,23 @@ func TestGenerateICS(t *testing.T) {
 					},
 				},
 			},
-			want:    "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//worldline-go//calendar//EN\r\nBEGIN:VEVENT\r\nSUMMARY:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\nDESCRIPTION:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\nDTSTART;VALUE=DATE:20230423\r\nDTEND;VALUE=DATE:20230424\r\nRRULE:FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=23\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+			want: "BEGIN:VCALENDAR\r\n" +
+				"VERSION:2.0\r\n" +
+				"PRODID:-//worldline-go//calendar//EN\r\n" +
+				"BEGIN:VEVENT\r\n" +
+				"UID:\r\n" +
+				"CATEGORIES:Holidays\r\n" +
+				"CLASS:public\r\n" +
+				"STATUS:CONFIRMED\r\n" +
+				"SUMMARY:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\n" +
+				"DESCRIPTION:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\n" +
+				"X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n" +
+				"DTSTART;VALUE=DATE:20230423\r\n" +
+				"DTEND;VALUE=DATE:20230424\r\n" +
+				"RRULE:FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=23\r\n" +
+				"TRANSP:TRANSPARENT\r\n" +
+				"END:VEVENT\r\n" +
+				"END:VCALENDAR\r\n",
 			wantErr: false,
 		},
 	}

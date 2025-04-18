@@ -299,7 +299,7 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64,
 // iCal
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddIcal(ctx context.Context, data io.Reader, relation models.Relation, tz string) error {
+func (s *Service) AddIcal(ctx context.Context, data io.Reader, relation models.Relation, tz *time.Location) error {
 	events, err := ical.ParseICS(data, tz)
 	if err != nil {
 		return fmt.Errorf("failed to parse ics: %w", err)
