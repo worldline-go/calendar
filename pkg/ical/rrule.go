@@ -297,6 +297,17 @@ func generateCandidatesForPeriod(rrule *RRule, base time.Time) []time.Time {
 			}
 		}
 	case "MONTHLY":
+		if len(rrule.ByMonth) == 0 &&
+			len(rrule.ByMonthDay) == 0 &&
+			len(rrule.ByYearDay) == 0 &&
+			len(rrule.ByWeekNo) == 0 &&
+			len(rrule.ByDay) == 0 {
+			if matchAllByRules(rrule, base) {
+				candidates = append(candidates, base)
+			}
+			return candidates
+		}
+
 		first := time.Date(base.Year(), base.Month(), 1, base.Hour(), base.Minute(), base.Second(), base.Nanosecond(), base.Location())
 		daysInMonth := daysInMonth(base.Year(), base.Month())
 		for i := range daysInMonth {
@@ -306,6 +317,17 @@ func generateCandidatesForPeriod(rrule *RRule, base time.Time) []time.Time {
 			}
 		}
 	case "YEARLY":
+		if len(rrule.ByMonth) == 0 &&
+			len(rrule.ByMonthDay) == 0 &&
+			len(rrule.ByYearDay) == 0 &&
+			len(rrule.ByWeekNo) == 0 &&
+			len(rrule.ByDay) == 0 {
+			if matchAllByRules(rrule, base) {
+				candidates = append(candidates, base)
+			}
+			return candidates
+		}
+
 		first := time.Date(base.Year(), 1, 1, base.Hour(), base.Minute(), base.Second(), base.Nanosecond(), base.Location())
 		daysInYear := 365
 		if isLeapYear(base.Year()) {

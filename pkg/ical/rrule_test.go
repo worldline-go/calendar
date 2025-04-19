@@ -78,6 +78,11 @@ func TestMatchRRuleAt(t *testing.T) {
 }
 
 func TestMatchRRuleBetween(t *testing.T) {
+	locationTurkiye, err := time.LoadLocation("Europe/Istanbul")
+	if err != nil {
+		t.Fatalf("Failed to load location: %v", err)
+	}
+
 	locationNewYork, err := time.LoadLocation("America/New_York")
 	if err != nil {
 		t.Fatalf("Failed to load location: %v", err)
@@ -104,13 +109,31 @@ func TestMatchRRuleBetween(t *testing.T) {
 					Freq:  "YEARLY",
 					Count: func(v int) *int { return &v }(6),
 				},
-				dtstart:  time.Date(2021, 11, 10, 0, 0, 0, 0, locationNewYork),
-				dtend:    time.Date(2021, 11, 11, 0, 0, 0, 0, locationNewYork),
-				dateFrom: time.Date(2022, 1, 1, 0, 0, 0, 0, locationNewYork),
-				dateTo:   time.Date(2023, 1, 1, 0, 0, 0, 0, locationNewYork),
+				dtstart:  time.Date(2021, 11, 10, 0, 0, 0, 0, locationTurkiye),
+				dtend:    time.Date(2021, 11, 11, 0, 0, 0, 0, locationTurkiye),
+				dateFrom: time.Date(2022, 1, 1, 0, 0, 0, 0, locationTurkiye),
+				dateTo:   time.Date(2023, 1, 1, 0, 0, 0, 0, locationTurkiye),
 			},
-			want:  time.Date(2021, 11, 10, 0, 0, 0, 0, locationNewYork),
-			want1: time.Date(2021, 11, 11, 0, 0, 0, 0, locationNewYork),
+			want:  time.Date(2022, 11, 10, 0, 0, 0, 0, locationTurkiye),
+			want1: time.Date(2022, 11, 11, 0, 0, 0, 0, locationTurkiye),
+			want2: true,
+		},
+		{
+			name: "Father's Day",
+			args: args{
+				rrule: &RRule{
+					Freq:    "YEARLY",
+					Count:   func(v int) *int { return &v }(6),
+					ByDay:   []string{"3SU"},
+					ByMonth: []int{6},
+				},
+				dtstart:  time.Date(2022, 6, 19, 0, 0, 0, 0, locationTurkiye),
+				dtend:    time.Date(2022, 6, 20, 0, 0, 0, 0, locationTurkiye),
+				dateFrom: time.Date(2024, 1, 1, 0, 0, 0, 0, locationTurkiye),
+				dateTo:   time.Date(2025, 1, 1, 0, 0, 0, 0, locationTurkiye),
+			},
+			want:  time.Date(2024, 6, 16, 0, 0, 0, 0, locationTurkiye),
+			want1: time.Date(2024, 6, 17, 0, 0, 0, 0, locationTurkiye),
 			want2: true,
 		},
 		{

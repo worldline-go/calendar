@@ -31,6 +31,7 @@ func TestGenerateICS(t *testing.T) {
 						DateFrom:    types.Time{Time: time.Date(2023, 4, 23, 0, 0, 0, 0, tzIstanbul)},
 						DateTo:      types.Time{Time: time.Date(2023, 4, 24, 0, 0, 0, 0, tzIstanbul)},
 						RRule:       "FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=23",
+						AllDay:      true,
 						Disabled:    false,
 						UpdatedAt:   types.Time{Time: time.Now()},
 						UpdatedBy:   "system",
@@ -43,11 +44,9 @@ func TestGenerateICS(t *testing.T) {
 				"BEGIN:VEVENT\r\n" +
 				"UID:\r\n" +
 				"CATEGORIES:Holidays\r\n" +
-				"CLASS:public\r\n" +
-				"STATUS:CONFIRMED\r\n" +
+				"CLASS:PUBLIC\r\n" +
 				"SUMMARY:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\n" +
 				"DESCRIPTION:23 Nisan Ulusal Egemenlik ve Çocuk Bayramı\r\n" +
-				"X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n" +
 				"DTSTART;VALUE=DATE:20230423\r\n" +
 				"DTEND;VALUE=DATE:20230424\r\n" +
 				"RRULE:FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=23\r\n" +
@@ -113,6 +112,7 @@ END:VEVENT
 					DateFrom:    types.Time{Time: time.Date(2024, 5, 19, 0, 0, 0, 0, tzIstanbul)},
 					DateTo:      types.Time{Time: time.Date(2024, 5, 20, 0, 0, 0, 0, tzIstanbul)},
 					Tz:          "Europe/Istanbul",
+					AllDay:      true,
 					RRule:       "",
 					Disabled:    false,
 				},

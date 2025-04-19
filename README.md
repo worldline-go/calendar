@@ -6,8 +6,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/worldline-go/calendar?style=flat-square)](https://goreportcard.com/report/github.com/worldline-go/calendar)
 [![Web](https://img.shields.io/badge/web-document-blueviolet?style=flat-square)](https://worldline-go.github.io/calendar/)
 
-> STILL IN DEVELOPMENT
-
 This service that provides information about holidays in a given country, bank or acquirer.
 
 ## Development

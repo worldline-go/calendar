@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -167,7 +168,7 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Event, error) {
 	var events []models.Event
 
-	qYearCheck := make(map[int]struct{})
+	qYearCheck := []int{}
 	if qYear, _ := q.Values["year"]; len(qYear) > 0 {
 		for _, v := range qYear {
 			if v.Value == nil {
@@ -184,17 +185,14 @@ func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Ev
 				return nil, fmt.Errorf("invalid year format: %w", err)
 			}
 
-			qYearCheck[qYearInt] = struct{}{}
+			qYearCheck = append(qYearCheck, qYearInt)
 		}
 	}
 
 	if len(qYearCheck) == 0 {
 		year := time.Now().Year()
 
-		qYearCheck[year-1] = struct{}{}
-		qYearCheck[year] = struct{}{}
-		qYearCheck[year+1] = struct{}{}
-		qYearCheck[year+2] = struct{}{}
+		qYearCheck = append(qYearCheck, year-1, year, year+1, year+2)
 	}
 
 	err := s.db.GetEventsWithFunc(ctx, q, func(h models.Event) error {
@@ -205,7 +203,7 @@ func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Ev
 		s.tzTime(&h)
 
 		if strings.TrimSpace(h.RRule) == "" {
-			if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
+			if slices.Contains(qYearCheck, h.DateFrom.Year()) {
 				events = append(events, h)
 			}
 
@@ -218,23 +216,28 @@ func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Ev
 		}
 
 		for _, rrule := range icsRepeat.RRule {
-			for year := range qYearCheck {
-				yearTime := time.Date(year, h.DateFrom.Time.Month(), h.DateFrom.Time.Day(), 0, 0, 0, 0, h.DateFrom.Time.Location())
-				start, stop, ok := ical.MatchRRuleBetween(rrule, h.DateFrom.Time, h.DateTo.Time, yearTime, yearTime.AddDate(1, 0, 0))
-				if !ok {
-					return nil
+			var minYear, maxYear int
+			for _, year := range qYearCheck {
+				if year < minYear || minYear == 0 {
+					minYear = year
 				}
-
-				h.DateFrom.Time = start
-				h.DateTo.Time = stop
-				h.RRule = rrule.Org()
-
-				if _, ok := qYearCheck[h.DateFrom.Year()]; ok {
-					events = append(events, h)
-					// one time add with rrule
-					break
+				if year > maxYear {
+					maxYear = year
 				}
 			}
+
+			yearTime := time.Date(minYear, 1, 1, 0, 0, 0, 0, h.DateFrom.Time.Location())
+			start, stop, ok := ical.MatchRRuleBetween(rrule, h.DateFrom.Time, h.DateTo.Time, yearTime, yearTime.AddDate(maxYear-minYear+1, 0, 0))
+			if !ok {
+				return nil
+			}
+
+			h.DateFrom.Time = start
+			h.DateTo.Time = stop
+			h.RRule = rrule.Org()
+
+			events = append(events, h)
+			break
 		}
 
 		for _, yearFn := range icsRepeat.Func {

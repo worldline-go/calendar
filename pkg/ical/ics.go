@@ -26,8 +26,7 @@ func GenerateICS(events []models.Event, category string) (string, error) {
 		b.WriteString("BEGIN:VEVENT\r\n")
 		b.WriteString(fmt.Sprintf("UID:%s\r\n", e.ID))
 		b.WriteString(fmt.Sprintf("CATEGORIES:%s\r\n", category))
-		b.WriteString("CLASS:public\r\n")
-		b.WriteString("STATUS:CONFIRMED\r\n")
+		b.WriteString("CLASS:PUBLIC\r\n")
 
 		name := escapeICS(e.Name)
 		if strings.HasPrefix(name, "LANGUAGE=") {
@@ -53,7 +52,6 @@ func GenerateICS(events []models.Event, category string) (string, error) {
 
 		if isAllDay {
 			// All-day event: DTSTART/DTEND in DATE format (YYYYMMDD)
-			b.WriteString("X-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n")
 			b.WriteString(fmt.Sprintf("DTSTART;VALUE=DATE:%s\r\n", from.Format("20060102")))
 			b.WriteString(fmt.Sprintf("DTEND;VALUE=DATE:%s\r\n", to.Format("20060102")))
 		} else {
