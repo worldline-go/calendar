@@ -28,7 +28,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	log.Log().Object("config", igconfig.Printer{Value: cfg}).Msg("loaded Config")
+	log.Info().Object("config", igconfig.Printer{Value: cfg}).Msg("loaded Config")
 
 	// ///////////////////////////////////////////////////////
 	// telemetry initialize

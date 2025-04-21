@@ -13,9 +13,9 @@ require (
 	github.com/swaggo/swag v1.16.2
 	github.com/worldline-go/cache v0.2.4
 	github.com/worldline-go/echo-swagger v1.4.1
-	github.com/worldline-go/igconfig v0.3.2
+	github.com/worldline-go/igconfig v0.3.3
 	github.com/worldline-go/igmigrator/v2 v2.4.0
-	github.com/worldline-go/initializer v0.5.0
+	github.com/worldline-go/initializer v0.5.1
 	github.com/worldline-go/klient v0.9.8
 	github.com/worldline-go/logz v0.5.1
 	github.com/worldline-go/query v0.1.6
@@ -113,7 +113,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rakunlabs/into v0.4.0 // indirect
+	github.com/rakunlabs/into v0.4.1 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/samber/go-singleflightx v0.3.1 // indirect

@@ -343,8 +343,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
-github.com/rakunlabs/into v0.4.0 h1:FcG/EWWovQZjLrTb83ic/M0i1GndtMQVqA1nY5e+koU=
-github.com/rakunlabs/into v0.4.0/go.mod h1:1fWgREm1FXNLCnfFPTPf6mCzgmi9jlqevYQbWLMnXeo=
+github.com/rakunlabs/into v0.4.1 h1:TLJC24M0G0njsParQFLI/ZLwZoA+/Rf3xH7Ks4082oA=
+github.com/rakunlabs/into v0.4.1/go.mod h1:1fWgREm1FXNLCnfFPTPf6mCzgmi9jlqevYQbWLMnXeo=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
 github.com/rs/xid v1.6.0/go.mod h1:7XoLgs4eV+QndskICGsho+ADou8ySMSjJKDIan90Nz0=
@@ -407,12 +407,12 @@ github.com/worldline-go/cache v0.2.4 h1:3dEC2Kx00fhRJhygT95/nF8Pq08JPasjmkaw6Fd5
 github.com/worldline-go/cache v0.2.4/go.mod h1:TWkAEC/MEwY+iY/slvitQ/153msboGyS//KdcLBXec8=
 github.com/worldline-go/echo-swagger v1.4.1 h1:ROpCqByA18ZPalzRgbDCDIKgJwybQFDtPH45ZUvwUSo=
 github.com/worldline-go/echo-swagger v1.4.1/go.mod h1:+tpJS6iaCRUkAqLhFXnrkEDziwSGunBffHKGsGQcNk0=
-github.com/worldline-go/igconfig v0.3.2 h1:3bIRFiXVBbEkJ4vCD8lrlo5VXXiVRxOdkkTcq6KKpTE=
-github.com/worldline-go/igconfig v0.3.2/go.mod h1:r4vvmqnopUNhklrCat+GmUO82GgptpMfiUkVSjLSbVY=
+github.com/worldline-go/igconfig v0.3.3 h1:RgTo2y2JaSuZc95C0QXvXEMaqRCsuY6i3JXndanq/wY=
+github.com/worldline-go/igconfig v0.3.3/go.mod h1:r4vvmqnopUNhklrCat+GmUO82GgptpMfiUkVSjLSbVY=
 github.com/worldline-go/igmigrator/v2 v2.4.0 h1:zkdDRv7Us77Io36XneVpGU81JkhBFUmywvnlCR0Wx18=
 github.com/worldline-go/igmigrator/v2 v2.4.0/go.mod h1:jfhDrQEAXnFVQ3oE6Q/Eu8Mkd8UowEkXvpJVZEhkGO4=
-github.com/worldline-go/initializer v0.5.0 h1:SFw1i9pIkvBNJW0FOjeY0nzrV2dF3FbUsvJ0VxgzHGo=
-github.com/worldline-go/initializer v0.5.0/go.mod h1:D2kY4ybHESPxcfzqTtokZAe6bPD+A7Zo5QP2toVa9Fs=
+github.com/worldline-go/initializer v0.5.1 h1:UhjWnPL5pt4futtiKckuyQ58s5ZVirUrh6wfFVxtr0Q=
+github.com/worldline-go/initializer v0.5.1/go.mod h1:cE7XJgUddCKtCj+PjFxuCKtWOejuGin1Ecaw6Zx69cA=
 github.com/worldline-go/klient v0.9.8 h1:tnTtPHjqN9kR76E6wgkZjafKFaxlg+4L4BlGxL5m74M=
 github.com/worldline-go/klient v0.9.8/go.mod h1:vXemhPgwAc2ueG8n3ioNvbcCE3GIqHfVPLWGj18ZPII=
 github.com/worldline-go/logz v0.5.1 h1:jpbKUd1FbecEzs7/p1zFH7tFtQ5demmc89Fa2YTHL/Q=
