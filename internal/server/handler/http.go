@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -99,7 +98,7 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 // @Param name query string false "name"
 // @Param description query string false "description"
 // @Param disabled query bool false "disabled"
-// @Param code query int false "code for relation"
+// @Param code query string false "code for relation"
 // @Param country query string false "country for relation"
 // @Param limit query int false "limit" default(25)
 // @Param offset query int false "offset"
@@ -403,7 +402,7 @@ func (h *HTTP) WorkDay(c echo.Context) error {
 // @Description AddICS
 // @Accept multipart/form-data
 // @Param file formData file true "ICS file"
-// @Param code query int false "code for relation"
+// @Param code query string false "code for relation"
 // @Param country query string false "country for relation"
 // @Param tz query string false "timezone like Europe/Amsterdam"
 // @Success 200 {object} rest.ResponseMessage
@@ -412,14 +411,9 @@ func (h *HTTP) WorkDay(c echo.Context) error {
 // @Router /ics [post]
 // @Tags iCal
 func (h *HTTP) AddICS(c echo.Context) error {
-	var codeNull types.Null[int64]
+	var codeNull types.Null[string]
 	if code := c.QueryParam("code"); code != "" {
-		codeInt, err := strconv.ParseInt(code, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid code: "+err.Error())
-		}
-
-		codeNull = types.NewNull(codeInt)
+		codeNull = types.NewNull(code)
 	}
 
 	var countryNull types.Null[string]
@@ -468,7 +462,7 @@ func (h *HTTP) AddICS(c echo.Context) error {
 
 // @Summary GetICS
 // @Description GetICS
-// @Param code query int false "code for relation"
+// @Param code query string false "code for relation"
 // @Param country query string false "country for relation"
 // @Param year query int false "specific year events"
 // @Success 200 {object} rest.ResponseMessage

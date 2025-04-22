@@ -48,7 +48,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "code for relation",
                         "name": "code",
                         "in": "query"
@@ -219,7 +219,7 @@ const docTemplate = `{
                 "summary": "GetICS",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "code for relation",
                         "name": "code",
                         "in": "query"
@@ -276,7 +276,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "code for relation",
                         "name": "code",
                         "in": "query"
@@ -593,7 +593,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "country": {
                     "type": "string"

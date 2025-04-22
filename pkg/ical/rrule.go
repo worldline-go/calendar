@@ -38,8 +38,8 @@ func (r *RRule) Org() string {
 // ParseRRule parses an RRULE string into an RRule struct.
 func ParseRRule(s string) (*RRule, error) {
 	rule := &RRule{Interval: 1, org: s}
-	parts := strings.Split(s, ";")
-	for _, part := range parts {
+	parts := strings.SplitSeq(s, ";")
+	for part := range parts {
 		if part == "" {
 			continue
 		}

@@ -3,7 +3,7 @@ CREATE TABLE if NOT EXISTS calendar_relations (
     event_id text NOT NULL,
 
     -- relation with any
-    code integer,
+    code text,
     country varchar(255),
 
     -- metadata

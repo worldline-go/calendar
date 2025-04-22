@@ -25,7 +25,7 @@ type Event struct {
 type Relation struct {
 	ID      string             `db:"id"       json:"id"`
 	EventID string             `db:"event_id" json:"event_id"`
-	Code    types.Null[int64]  `db:"code"     json:"code"     swaggertype:"integer"`
+	Code    types.Null[string] `db:"code"     json:"code"     swaggertype:"string"`
 	Country types.Null[string] `db:"country"  json:"country"  swaggertype:"string"`
 
 	UpdatedAt types.Time `db:"updated_at" json:"updated_at"`
