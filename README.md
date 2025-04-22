@@ -15,7 +15,7 @@ Use `make` to show help and create env, run tests, etc.
 ```sh
 # Run compose-file to open postgresql in local
 make env
-# Start the service, it default reads `calendar.[yaml|yml|json|toml]` or use `CONFIG_FILE` env value for file path.
+# Start the service, it default reads `calendar.[toml|yaml|yml|json]` or use `CONFIG_FILE` env value for file path.
 make run
 ```
 

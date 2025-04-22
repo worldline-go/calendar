@@ -127,6 +127,7 @@
   --vp-custom-block-tip-text: var(--vp-c-text-1);
   --vp-custom-block-tip-bg: var(--vp-c-brand-soft);
   --vp-custom-block-tip-code-bg: var(--vp-c-brand-soft);
+  --vp-code-block-bg: #121217;
 }
 
 /**
@@ -135,5 +136,16 @@
 
 .DocSearch {
   --docsearch-primary-color: var(--vp-c-brand-1) !important;
+}
+
+.vp-doc ul {
+  list-style-type: square;
+}
+
+::selection {
+  --tw-bg-opacity: 1;
+  background-color: #ef4444;
+  --tw-text-opacity: 1;
+  color: #ffffff;
 }
 

@@ -3,6 +3,7 @@ import { defineConfig } from "vitepress";
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Calendar",
+  base: "/calendar/",
   titleTemplate: false,
   cleanUrls: true,
   description: "Calendar Service",

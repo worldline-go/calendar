@@ -1,9 +1,7 @@
 # Getting Started
 
-Calendar service uses [PostgreSQL](https://www.postgresql.org/) as a database.  
-It is recommended to use [Docker](https://www.docker.com/) to run the database locally.
-
-This service is written in [Go](https://golang.org/) and does not require any additional dependencies to run.
+This service is written in [Go](https://golang.org/) and does not require any additional dependencies to run.  
+Storage need [PostgreSQL](https://www.postgresql.org/).
 
 ## Install
 
@@ -15,3 +13,21 @@ Extract it from archive and before to run, you need to have configuration file.
 
 ## Configuration
 
+Give the path to the configuration file using `CONFIG_FILE` environment variable or use default file name `calendar.[toml|yaml|yml|json]` in the current directory.
+
+```yaml
+log_level: info
+port: 8080
+
+db_type: pgx
+db_datasource: postgres://postgres@localhost:5432/postgres?sslmode=disable # default is empty
+db_schema: public
+
+migrate:
+  db_datasource: postgres://postgres@localhost:5432/postgres?sslmode=disable # default is empty
+  db_type: pgx
+  db_schema: public
+  db_table: calendar_migrations
+```
+
+> Configuration migration's connect and database's connect are separated.
