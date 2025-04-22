@@ -128,7 +128,7 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 
 	count, err := h.Service.GetEventsCount(c.Request().Context(), q)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "events count failed").SetInternal(err)
 	}
 
 	return c.JSON(http.StatusOK, rest.Response[[]models.Event]{

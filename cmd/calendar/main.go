@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rakunlabs/chu"
 	"github.com/rs/zerolog/log"
-	"github.com/worldline-go/igconfig"
 	"github.com/worldline-go/initializer"
 	"github.com/worldline-go/tell"
 
@@ -28,7 +28,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	log.Info().Object("config", igconfig.Printer{Value: cfg}).Msg("loaded Config")
+	log.Log().RawJSON("config", chu.MarshalJSON(cfg)).Msg("loaded Config")
 
 	// ///////////////////////////////////////////////////////
 	// telemetry initialize

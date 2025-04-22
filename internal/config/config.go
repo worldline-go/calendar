@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/worldline-go/igconfig"
-	"github.com/worldline-go/igconfig/loader"
+	"github.com/rakunlabs/chu"
 	"github.com/worldline-go/logz"
 	"github.com/worldline-go/tell"
+
+	_ "github.com/rakunlabs/chu/loader/loaderconsul"
+	_ "github.com/rakunlabs/chu/loader/loadervault"
 )
 
 var (
@@ -40,16 +42,10 @@ type Migrate struct {
 	DBTable      string `cfg:"db_table"      default:"calendar_migrations"`
 }
 
-func init() {
-	loader.VaultSecretAdditionalPaths = append(loader.VaultSecretAdditionalPaths,
-		loader.AdditionalPath{Map: "migrate", Name: "migrations"},
-	)
-}
-
 func Load(ctx context.Context) (*Config, error) {
 	cfg := &Config{}
 
-	if err := igconfig.LoadConfigWithContext(ctx, ServiceDomain+"/"+ServiceName, cfg); err != nil {
+	if err := chu.Load(ctx, ServiceDomain+"/"+ServiceName, cfg, chu.WithLogger(logz.Log())); err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
