@@ -7,8 +7,9 @@ import (
 type Event struct {
 	ID string `db:"id" json:"id" goqu:"skipupdate"`
 
-	Name        string `db:"name"        json:"name"`
-	Description string `db:"description" json:"description"`
+	Name        string             `db:"name"        json:"name"`
+	Description string             `db:"description" json:"description"`
+	EventGroup  types.Null[string] `db:"event_group" json:"event_group"`
 
 	DateFrom types.Time `db:"date_from" json:"date_from" swaggertype:"string"`
 	DateTo   types.Time `db:"date_to"   json:"date_to"   swaggertype:"string"`
@@ -23,10 +24,10 @@ type Event struct {
 }
 
 type Relation struct {
-	ID      string             `db:"id"       json:"id"`
-	EventID string             `db:"event_id" json:"event_id"`
-	Code    types.Null[string] `db:"code"     json:"code"     swaggertype:"string"`
-	Country types.Null[string] `db:"country"  json:"country"  swaggertype:"string"`
+	Entity string `db:"entity" json:"entity"`
+
+	EventID    types.Null[string] `db:"event_id"    json:"event_id"    swaggertype:"string"`
+	EventGroup types.Null[string] `db:"event_group" json:"event_group" swaggertype:"string"`
 
 	UpdatedAt types.Time `db:"updated_at" json:"updated_at"`
 	UpdatedBy string     `db:"updated_by" json:"updated_by"`

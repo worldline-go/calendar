@@ -10,10 +10,9 @@ import (
 
 type Database interface {
 	AddRelations(ctx context.Context, relations []models.Relation) error
-	RemoveRelation(ctx context.Context, id string) error
-	GetRelation(ctx context.Context, id string) (*models.Relation, error)
+	RemoveRelation(ctx context.Context, q *query.Query) error
 	GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error)
-	GetRelationsCount(ctx context.Context, q *query.Query) (int64, error)
+	GetRelationsCount(ctx context.Context, q *query.Query) (uint64, error)
 
 	AddEvents(ctx context.Context, events []models.Event) error
 	GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error)
@@ -21,5 +20,5 @@ type Database interface {
 	GetEventsWithFunc(ctx context.Context, q *query.Query, fn func(models.Event) error) error
 	GetEvent(ctx context.Context, id string) (*models.Event, error)
 	UpdateEvent(ctx context.Context, id string, event *models.Event) error
-	RemoveEvent(ctx context.Context, id string) error
+	RemoveEvent(ctx context.Context, id ...string) error
 }

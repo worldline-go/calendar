@@ -1,10 +1,9 @@
 CREATE TABLE if NOT EXISTS calendar_relations (
-    id text NOT NULL PRIMARY KEY UNIQUE,
-    event_id text NOT NULL,
+    entity text NOT NULL,
 
     -- relation with any
-    code text,
-    country varchar(255),
+    event_group text,
+    event_id text,
 
     -- metadata
     updated_at timestamp with time zone default now(),
@@ -13,9 +12,5 @@ CREATE TABLE if NOT EXISTS calendar_relations (
     -- foreign keys
     FOREIGN KEY (event_id) REFERENCES calendar_events (id) ON DELETE CASCADE,
 
-    CONSTRAINT unique_calendar_code UNIQUE (event_id, code, country)
+    CONSTRAINT unique_calendar_entity UNIQUE (entity, event_group, event_id)
 );
-
-CREATE INDEX ON calendar_relations (event_id);
-CREATE INDEX ON calendar_relations (code);
-CREATE INDEX ON calendar_relations (country);

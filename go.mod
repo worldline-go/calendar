@@ -8,7 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/rakunlabs/chu v0.2.2
+	github.com/rakunlabs/chu v0.2.3
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.2
@@ -18,8 +18,8 @@ require (
 	github.com/worldline-go/initializer v0.5.1
 	github.com/worldline-go/klient v0.9.8
 	github.com/worldline-go/logz v0.5.2
-	github.com/worldline-go/query v0.1.6
-	github.com/worldline-go/rest v0.1.4
+	github.com/worldline-go/query v0.1.10
+	github.com/worldline-go/rest v0.1.5
 	github.com/worldline-go/swagger v1.0.0
 	github.com/worldline-go/tell v0.6.0
 	github.com/worldline-go/test v0.3.2

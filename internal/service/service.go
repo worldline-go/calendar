@@ -73,8 +73,8 @@ func (s *Service) AddEvents(ctx context.Context, events []models.Event) error {
 	return nil
 }
 
-func (s *Service) RemoveEvent(ctx context.Context, id string) error {
-	err := s.db.RemoveEvent(ctx, id)
+func (s *Service) RemoveEvent(ctx context.Context, id ...string) error {
+	err := s.db.RemoveEvent(ctx, id...)
 	if err != nil {
 		return err
 	}
@@ -305,22 +305,13 @@ func (s *Service) AddRelations(ctx context.Context, relations []models.Relation)
 	return nil
 }
 
-func (s *Service) RemoveRelation(ctx context.Context, id string) error {
-	err := s.db.RemoveRelation(ctx, id)
+func (s *Service) RemoveRelation(ctx context.Context, q *query.Query) error {
+	err := s.db.RemoveRelation(ctx, q)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (s *Service) GetRelation(ctx context.Context, id string) (*models.Relation, error) {
-	relation, err := s.db.GetRelation(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return relation, nil
 }
 
 func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
@@ -332,7 +323,7 @@ func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]models.Re
 	return relations, nil
 }
 
-func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64, error) {
+func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (uint64, error) {
 	count, err := s.db.GetRelationsCount(ctx, q)
 	if err != nil {
 		return 0, err
@@ -345,32 +336,18 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (int64,
 // iCal
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddIcal(ctx context.Context, data io.Reader, relation models.Relation, tz *time.Location) error {
+func (s *Service) AddIcal(ctx context.Context, data io.Reader, tz *time.Location, group types.Null[string]) error {
 	events, err := ical.ParseICS(data, tz)
 	if err != nil {
 		return fmt.Errorf("failed to parse ics: %w", err)
 	}
 
+	for i := range events {
+		events[i].EventGroup = group
+	}
+
 	if err := s.db.AddEvents(ctx, events); err != nil {
 		return fmt.Errorf("failed to add events: %w", err)
-	}
-
-	// add relations
-	if !relation.Code.Valid && !relation.Country.Valid {
-		return nil
-	}
-
-	relations := make([]models.Relation, 0, len(events))
-	for i := range events {
-		relations = append(relations, models.Relation{
-			EventID: events[i].ID,
-			Code:    relation.Code,
-			Country: relation.Country,
-		})
-	}
-
-	if err := s.db.AddRelations(ctx, relations); err != nil {
-		return fmt.Errorf("failed to add relations: %w", err)
 	}
 
 	return nil

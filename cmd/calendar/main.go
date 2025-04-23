@@ -15,10 +15,18 @@ import (
 	"github.com/worldline-go/calendar/internal/service"
 )
 
+var (
+	version = "v0.0.0"
+	commit  = ""
+	date    = ""
+)
+
 func main() {
+	config.ServiceVersion = version
+
 	initializer.Init(
 		run,
-		initializer.WithMsgf("%s [%s]", config.ServiceName, config.ServiceVersion),
+		initializer.WithMsgf("%s [%s] build %s %s", config.ServiceName, config.ServiceVersion, commit, date),
 	)
 }
 

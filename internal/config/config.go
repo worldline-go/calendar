@@ -15,7 +15,6 @@ import (
 var (
 	ServiceName    = "calendar"
 	ServiceVersion = "v0.0.0"
-	ServiceDomain  = "admin"
 
 	ServiceLog = ServiceName + "@" + ServiceVersion
 )
@@ -45,7 +44,7 @@ type Migrate struct {
 func Load(ctx context.Context) (*Config, error) {
 	cfg := &Config{}
 
-	if err := chu.Load(ctx, ServiceDomain+"/"+ServiceName, cfg, chu.WithLogger(logz.Log())); err != nil {
+	if err := chu.Load(ctx, ServiceName, cfg, chu.WithLogger(logz.Log())); err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 

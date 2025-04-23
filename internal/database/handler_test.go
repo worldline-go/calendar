@@ -70,4 +70,19 @@ func (s *DatabaseSuite) TestAddEvents() {
 	s.Require().Equal(events[0].Disabled, result[0].Disabled)
 	s.Require().Equal(events[0].UpdatedAt.Truncate(time.Millisecond), result[0].UpdatedAt.Truncate(time.Millisecond), "UpdatedAt wrong")
 	s.Require().Equal(events[0].UpdatedBy, result[0].UpdatedBy)
+
+	// remove events
+	err = s.db.RemoveEvent(s.T().Context(), events[0].ID)
+	s.Require().NoError(err)
+	// check if removed
+	parse, err = query.Parse("", query.WithExpressionCmp("id", query.ExpressionCmp{
+		Operator: query.OperatorEq,
+		Field:    "id",
+		Value:    events[0].ID,
+	}))
+	s.Require().NoError(err)
+
+	result, err = s.db.GetEvents(s.T().Context(), parse)
+	s.Require().NoError(err)
+	s.Require().Len(result, 0)
 }

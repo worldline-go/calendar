@@ -26,15 +26,21 @@ var (
 	TableEventsStr    = "calendar_events"
 	TableRelationsStr = "calendar_relations"
 
-	Schema        exp.IdentifierExpression
-	TableEvents   exp.AliasedExpression
-	TableRelation exp.AliasedExpression
+	TableEvents   exp.IdentifierExpression
+	TableRelation exp.IdentifierExpression
+
+	Schema          exp.IdentifierExpression
+	TableEventsAs   exp.AliasedExpression
+	TableRelationAs exp.AliasedExpression
 )
 
 func setSchema(schema string) {
 	Schema = goqu.S(schema)
-	TableEvents = Schema.Table(TableEventsStr).As(TableEventsStr)
-	TableRelation = Schema.Table(TableRelationsStr).As(TableRelationsStr)
+	TableEvents = Schema.Table(TableEventsStr)
+	TableRelation = Schema.Table(TableRelationsStr)
+
+	TableEventsAs = TableEvents.As(TableEventsStr)
+	TableRelationAs = TableRelation.As(TableRelationsStr)
 }
 
 func (db *Database) AddEvents(ctx context.Context, events []models.Event) error {
@@ -59,40 +65,35 @@ func (db *Database) AddEvents(ctx context.Context, events []models.Event) error 
 }
 
 func (db *Database) getEventsSelect(q *query.Query) *goqu.SelectDataset {
-	selectDataSet := adaptergoqu.Select(q, db.q.From(TableEvents),
-		adaptergoqu.WithDefaultSelect(
-			TableEventsStr+".id",
-			TableEventsStr+".name",
-			TableEventsStr+".description",
-			TableEventsStr+".date_from",
-			TableEventsStr+".date_to",
-			TableEventsStr+".tz",
-			TableEventsStr+".all_day",
-			TableEventsStr+".rrule",
-			TableEventsStr+".disabled",
-			TableEventsStr+".updated_at",
-			TableEventsStr+".updated_by",
-		),
+	selectDataSet := adaptergoqu.Select(q, db.q.From(TableEventsAs),
+		adaptergoqu.WithDefaultSelect(TableEventsStr+".*"),
 		adaptergoqu.WithRename(map[string]string{
-			"code":    TableRelationsStr + ".code",
-			"country": TableRelationsStr + ".country",
+			"entity": TableRelationsStr + ".entity",
 		}),
-	)
+	).Distinct()
 
-	if q.HasAny("code", "country") {
-		selectDataSet = selectDataSet.RightJoin(TableRelation, goqu.On(goqu.Ex{TableRelationsStr + ".event_id": goqu.I("calendar_events.id")}))
+	if q.HasAny("entity") {
+		selectDataSet = selectDataSet.RightJoin(TableRelationAs, goqu.On(
+			goqu.Or(
+				goqu.Ex{TableRelationsStr + ".event_id": goqu.I(TableEventsStr + ".id")},
+				goqu.Ex{TableRelationsStr + ".event_group": goqu.I(TableEventsStr + ".event_group")},
+			),
+		))
 	}
 
 	return selectDataSet
 }
 
 func (db *Database) GetEventsCount(ctx context.Context, q *query.Query) (uint64, error) {
-	count, err := db.getEventsSelect(q).CountContext(ctx)
+	var count uint64
+	_, err := db.getEventsSelect(q).
+		Select(goqu.COUNT(goqu.DISTINCT("id"))).
+		Executor().ScanValContext(ctx, &count)
 	if err != nil {
 		return 0, err
 	}
 
-	return uint64(count), nil
+	return count, nil
 }
 
 func (db *Database) GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error) {
@@ -153,6 +154,8 @@ func (db *Database) GetEvent(ctx context.Context, id string) (*models.Event, err
 }
 
 func (db *Database) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
+	event.UpdatedAt = types.Time{Time: time.Now()}
+
 	_, err := db.q.Update(TableEvents).
 		Set(event).
 		Where(goqu.Ex{
@@ -166,10 +169,10 @@ func (db *Database) UpdateEvent(ctx context.Context, id string, event *models.Ev
 	return nil
 }
 
-func (db *Database) RemoveEvent(ctx context.Context, id string) error {
+func (db *Database) RemoveEvent(ctx context.Context, id ...string) error {
 	_, err := db.q.Delete(TableEvents).
 		Where(goqu.Ex{
-			"id": id,
+			"id": goqu.Op{"in": id},
 		}).
 		Executor().ExecContext(ctx)
 	if err != nil {
@@ -187,7 +190,6 @@ func (db *Database) AddRelations(ctx context.Context, relations []models.Relatio
 	updatedAt := types.Time{Time: time.Now()}
 
 	for i := range relations {
-		relations[i].ID = ulid.Make().String()
 		relations[i].UpdatedAt = updatedAt
 	}
 
@@ -202,11 +204,9 @@ func (db *Database) AddRelations(ctx context.Context, relations []models.Relatio
 	return nil
 }
 
-func (db *Database) RemoveRelation(ctx context.Context, id string) error {
+func (db *Database) RemoveRelation(ctx context.Context, q *query.Query) error {
 	_, err := db.q.Delete(TableRelation).
-		Where(goqu.Ex{
-			"id": id,
-		}).
+		Where(adaptergoqu.Expression(q)...).
 		Executor().ExecContext(ctx)
 	if err != nil {
 		return err
@@ -215,13 +215,13 @@ func (db *Database) RemoveRelation(ctx context.Context, id string) error {
 	return nil
 }
 
-func (db *Database) GetRelationsCount(ctx context.Context, q *query.Query) (int64, error) {
+func (db *Database) GetRelationsCount(ctx context.Context, q *query.Query) (uint64, error) {
 	count, err := adaptergoqu.Select(q, db.q.From(TableRelation)).CountContext(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return count, nil
+	return uint64(count), nil
 }
 
 func (db *Database) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
@@ -232,23 +232,4 @@ func (db *Database) GetRelations(ctx context.Context, q *query.Query) ([]models.
 	}
 
 	return relations, nil
-}
-
-func (db *Database) GetRelation(ctx context.Context, id string) (*models.Relation, error) {
-	var relation models.Relation
-
-	found, err := db.q.From(TableRelation).
-		Where(goqu.Ex{
-			"id": id,
-		}).
-		Executor().ScanStructContext(ctx, &relation)
-	if err != nil {
-		return nil, err
-	}
-
-	if !found {
-		return nil, nil
-	}
-
-	return &relation, nil
 }

@@ -25,26 +25,71 @@ type HTTP struct {
 }
 
 type QueryValidator struct {
-	GetEvents     *query.Validator
+	GetEvents    *query.Validator
+	DeleteEvents *query.Validator
+
+	GetRelations    *query.Validator
+	DeleteRelations *query.Validator
+
 	GetEventsDate *query.Validator
 	GetICS        *query.Validator
 }
 
+var DefaultLimit uint64 = 25
+
 func NewHTTP(svc *service.Service) (*HTTP, error) {
 	validatorGetEvents, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("id", "code", "country", "name", "description", "disabled")),
+		query.WithSort(query.WithIn("id", "entity", "event_group", "name", "description", "disabled", "date_from", "date_to", "updated_at", "updated_by")),
+		query.WithValues(query.WithIn("id", "entity", "event_group", "name", "description", "disabled", "updated_by")),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create validator for GetEvents: %w", err)
 	}
 
+	validatorDeleteEvents, err := query.NewValidator(
+		query.WithField(query.WithNotAllowed()),
+		query.WithValues(query.WithIn("id")),
+		query.WithValue("id", query.WithOperator(query.OperatorEq, query.OperatorIn), query.WithNotEmpty()),
+		query.WithLimit(query.WithNotAllowed()),
+		query.WithOffset(query.WithNotAllowed()),
+		query.WithSort(query.WithNotAllowed()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator for DeleteEvents: %w", err)
+	}
+
+	validatorGetRelations, err := query.NewValidator(
+		query.WithField(query.WithNotAllowed()),
+		query.WithSort(query.WithIn("event_id", "event_group", "entity")),
+		query.WithValues(query.WithIn("entity", "event_id", "event_group")),
+		query.WithValue("entity", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("event_id", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("event_group", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator for GetRelations: %w", err)
+	}
+
+	validatorDeleteRelations, err := query.NewValidator(
+		query.WithField(query.WithNotAllowed()),
+		query.WithValues(query.WithIn("entity", "event_id", "event_group")),
+		query.WithValue("entity", query.WithOperator(query.OperatorEq, query.OperatorIn), query.WithNotEmpty()),
+		query.WithValue("event_id", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("event_group", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithLimit(query.WithNotAllowed()),
+		query.WithOffset(query.WithNotAllowed()),
+		query.WithSort(query.WithNotAllowed()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator for DeleteRelations: %w", err)
+	}
+
 	validatorGetEventsDate, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("code", "country", "date", "duration")),
-		query.WithValue("duration", query.WithOperator(query.OperatorEq)),
-		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
-		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValues(query.WithIn("entity", "event_group", "date")),
+		query.WithValue("entity", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("event_group", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("date", query.WithOperator(query.OperatorEq), query.WithNotEmpty()),
 	)
 	if err != nil {
@@ -53,9 +98,9 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 
 	validatorGetICS, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
-		query.WithValues(query.WithIn("code", "country", "year")),
-		query.WithValue("code", query.WithOperator(query.OperatorEq, query.OperatorIn)),
-		query.WithValue("country", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValues(query.WithIn("entity", "event_group", "year")),
+		query.WithValue("entity", query.WithOperator(query.OperatorEq, query.OperatorIn)),
+		query.WithValue("event_group", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 		query.WithValue("year", query.WithOperator(query.OperatorEq, query.OperatorIn)),
 	)
 	if err != nil {
@@ -65,9 +110,12 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 	return &HTTP{
 		Service: svc,
 		Validator: QueryValidator{
-			GetEvents:     validatorGetEvents,
-			GetEventsDate: validatorGetEventsDate,
-			GetICS:        validatorGetICS,
+			GetEvents:       validatorGetEvents,
+			DeleteEvents:    validatorDeleteEvents,
+			DeleteRelations: validatorDeleteRelations,
+			GetRelations:    validatorGetRelations,
+			GetEventsDate:   validatorGetEventsDate,
+			GetICS:          validatorGetICS,
 		},
 	}, nil
 }
@@ -75,19 +123,17 @@ func NewHTTP(svc *service.Service) (*HTTP, error) {
 func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.GET("/events", h.GetEvents)
 	g.POST("/events", h.AddEvents)
+	g.DELETE("/events", h.DeleteEvents)
 
 	g.GET("/events/{id}", h.GetEvent)
-	g.DELETE("/events/{id}", h.RemoveEvent)
-	g.PUT("/events/{id}", h.RemoveEvent)
-	g.PATCH("/events/{id}", h.RemoveEvent)
+	g.DELETE("/events/{id}", h.DeleteEvent)
+	g.PUT("/events/{id}", h.PutEvent)
 
 	g.GET("/relations", h.GetRelations)
 	g.POST("/relations", h.AddRelations)
+	g.DELETE("/relations", h.DeleteRelations)
 
-	g.GET("/relations/{id}", h.GetRelation)
-	g.DELETE("/relations/{id}", h.RemoveRelation)
-
-	g.GET("/workday", h.WorkDay)
+	g.GET("/holiday", h.Holiday)
 	g.POST("/ics", h.AddICS)
 	g.GET("/ics", h.GetICS)
 }
@@ -97,9 +143,9 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 // @Param id query string false "id"
 // @Param name query string false "name"
 // @Param description query string false "description"
+// @Param event_group query string false "event_group"
+// @Param entity query string false "entity for relation"
 // @Param disabled query bool false "disabled"
-// @Param code query string false "code for relation"
-// @Param country query string false "country for relation"
 // @Param limit query int false "limit" default(25)
 // @Param offset query int false "offset"
 // @Success 200 {object} rest.Response[[]models.Event]
@@ -111,7 +157,7 @@ func (h *HTTP) GetEvents(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetEvents,
-		query.WithDefaultLimit(25),
+		query.WithDefaultLimit(DefaultLimit),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -203,15 +249,15 @@ func (h *HTTP) GetEvent(c echo.Context) error {
 	})
 }
 
-// @Summary RemoveEvent
-// @Description RemoveEvent
+// @Summary DeleteEvent
+// @Description DeleteEvent
 // @Param id path string true "Event ID"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /events/{id} [delete]
 // @Tags Events
-func (h *HTTP) RemoveEvent(c echo.Context) error {
+func (h *HTTP) DeleteEvent(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "missing event ID")
@@ -224,6 +270,69 @@ func (h *HTTP) RemoveEvent(c echo.Context) error {
 	return nil
 }
 
+// @Summary DeleteEvents
+// @Description DeleteEvents for multiple events
+// @Param id query string true "Event ID"
+// @Success 200 {object} rest.ResponseMessage
+// @Failure 400 {object} rest.ResponseMessage
+// @Failure 500 {object} rest.ResponseMessage
+// @Router /events [delete]
+// @Tags Events
+func (h *HTTP) DeleteEvents(c echo.Context) error {
+	q, err := query.ParseWithValidator(
+		c.QueryString(),
+		h.Validator.DeleteEvents,
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	ids := q.GetValues("id")
+	if len(ids) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing event ID")
+	}
+
+	if err := h.Service.RemoveEvent(c.Request().Context(), q.GetValues("id")...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// @Summary PutEvent
+// @Description PutEvent
+// @Param id path string true "Event ID"
+// @Param body body models.Event true "Event"
+// @Success 200 {object} rest.ResponseMessage
+// @Failure 400 {object} rest.ResponseMessage
+// @Failure 500 {object} rest.ResponseMessage
+// @Router /events/{id} [put]
+// @Tags Events
+func (h *HTTP) PutEvent(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "missing event ID")
+	}
+
+	v := models.Event{}
+	if err := rest.BindJSON(c.Request().Body, &v); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	updatedBy := server.GetUser(c)
+	v.UpdatedBy = updatedBy
+
+	if err := h.Service.UpdateEvent(c.Request().Context(), id, &v); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, rest.ResponseMessage{
+		Message: &rest.Message{
+			Text: "Event updated",
+		},
+	})
+}
+
 // /////////////////////////////////////////////////////////////
 // Relations
 // /////////////////////////////////////////////////////////////
@@ -231,7 +340,7 @@ func (h *HTTP) RemoveEvent(c echo.Context) error {
 // @Summary AddRelations
 // @Description AddRelations
 // @Param body body []models.Relation true "Relation"
-// @Success 200 {object} rest.Response[[]string]
+// @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /relations [post]
@@ -244,6 +353,10 @@ func (h *HTTP) AddRelations(c echo.Context) error {
 
 	updatedBy := server.GetUser(c)
 	for i := range v {
+		if v[i].Entity == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "missing entity")
+		}
+
 		v[i].UpdatedBy = updatedBy
 	}
 
@@ -251,34 +364,33 @@ func (h *HTTP) AddRelations(c echo.Context) error {
 		return err
 	}
 
-	ids := make([]string, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-
-	return c.JSON(http.StatusOK, rest.Response[[]string]{
+	return c.JSON(http.StatusOK, rest.ResponseMessage{
 		Message: &rest.Message{
 			Text: "Relations added",
 		},
-		Payload: ids,
 	})
 }
 
-// @Summary RemoveRelation
-// @Description RemoveRelation
-// @Param id path string true "Relation ID"
+// @Summary DeleteRelations
+// @Description DeleteRelations for multiple relations
+// @Param entity query string true "entity"
+// @Param event_id query string false "event_id"
+// @Param event_group query string false "event_group"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /relations/{id} [delete]
+// @Router /relations [delete]
 // @Tags Relations
-func (h *HTTP) RemoveRelation(c echo.Context) error {
-	id := c.Param("id")
-	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing relation ID")
+func (h *HTTP) DeleteRelations(c echo.Context) error {
+	q, err := query.ParseWithValidator(
+		c.QueryString(),
+		h.Validator.DeleteRelations,
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.Service.RemoveRelation(c.Request().Context(), id); err != nil {
+	if err := h.Service.RemoveRelation(c.Request().Context(), q); err != nil {
 		return err
 	}
 
@@ -291,9 +403,10 @@ func (h *HTTP) RemoveRelation(c echo.Context) error {
 
 // @Summary GetRelations
 // @Description GetRelations
-// @Param id query string false "id"
-// @Param code query int false "code for relation"
-// @Param country query string false "country for relation"
+// @Param entity query string false "entity"
+// @Param event_id query string false "event_id"
+// @Param event_group query string false "event_group"
+// @Param sort query string false "sort"
 // @Param limit query int false "limit" default(25)
 // @Param offset query int false "offset"
 // @Success 200 {object} rest.Response[[]models.Relation]
@@ -302,7 +415,7 @@ func (h *HTTP) RemoveRelation(c echo.Context) error {
 // @Router /relations [get]
 // @Tags Relations
 func (h *HTTP) GetRelations(c echo.Context) error {
-	q, err := query.ParseWithValidator(c.QueryString(), h.Validator.GetEvents)
+	q, err := query.ParseWithValidator(c.QueryString(), h.Validator.GetRelations, query.WithDefaultLimit(DefaultLimit))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -322,7 +435,7 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, rest.Response[[]models.Relation]{
 		Meta: &rest.Meta{
-			TotalItemCount: uint64(count),
+			TotalItemCount: count,
 			Limit:          q.GetLimit(),
 			Offset:         q.GetOffset(),
 		},
@@ -330,51 +443,23 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 	})
 }
 
-// @Summary GetRelation
-// @Description GetRelation
-// @Param id path string true "Relation ID"
-// @Success 200 {object} rest.Response[models.Relation]
-// @Failure 400 {object} rest.ResponseMessage
-// @Failure 500 {object} rest.ResponseMessage
-// @Router /relations/{id} [get]
-// @Tags Relations
-func (h *HTTP) GetRelation(c echo.Context) error {
-	id := c.Param("id")
-	if id == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "missing relation ID")
-	}
-
-	relation, err := h.Service.GetRelation(c.Request().Context(), id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-	if relation == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "relation not found")
-	}
-
-	return c.JSON(http.StatusOK, rest.Response[models.Relation]{
-		Payload: *relation,
-	})
-}
-
 // ////////////////////////////////////////////////////////////////
 
-// @Summary WorkDay
+// @Summary Holiday
 // @Description GetEvents for specific date
-// @Param code query int false "code for relation"
-// @Param country query string false "country for relation"
+// @Param entity query int false "entity for relation"
+// @Param event_group query string false "country for relation"
 // @Param date query string true "date specific event"
-// @Param duration query string false "duration like 1d, 2w, 1h, 1m"
 // @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /workday [get]
+// @Router /holiday [get]
 // @Tags Search
-func (h *HTTP) WorkDay(c echo.Context) error {
+func (h *HTTP) Holiday(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetEventsDate,
-		query.WithSkipExpressionCmp("date", "duration"),
+		query.WithSkipExpressionCmp("date"),
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -402,23 +487,17 @@ func (h *HTTP) WorkDay(c echo.Context) error {
 // @Description AddICS
 // @Accept multipart/form-data
 // @Param file formData file true "ICS file"
-// @Param code query string false "code for relation"
-// @Param country query string false "country for relation"
-// @Param tz query string false "timezone like Europe/Amsterdam"
+// @Param event_group query string false "event_group for ics"
+// @Param tz query string false "timezone like Europe/Amsterdam default UTC"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
 // @Router /ics [post]
 // @Tags iCal
 func (h *HTTP) AddICS(c echo.Context) error {
-	var codeNull types.Null[string]
-	if code := c.QueryParam("code"); code != "" {
-		codeNull = types.NewNull(code)
-	}
-
-	var countryNull types.Null[string]
-	if country := c.QueryParam("country"); country != "" {
-		countryNull = types.NewNull(country)
+	var eventGroupNull types.Null[string]
+	if eventGroup := c.QueryParam("event_group"); eventGroup != "" {
+		eventGroupNull = types.NewNull(eventGroup)
 	}
 
 	file, err := c.FormFile("file")
@@ -432,12 +511,6 @@ func (h *HTTP) AddICS(c echo.Context) error {
 	}
 	defer src.Close()
 
-	commonRelation := models.Relation{
-		Code:      codeNull,
-		Country:   countryNull,
-		UpdatedBy: server.GetUser(c),
-	}
-
 	tz := strings.TrimSpace(c.QueryParam("tz"))
 	defaultTZ := time.UTC
 	if tz != "" {
@@ -449,7 +522,7 @@ func (h *HTTP) AddICS(c echo.Context) error {
 		defaultTZ = loc
 	}
 
-	if err := h.Service.AddIcal(c.Request().Context(), src, commonRelation, defaultTZ); err != nil {
+	if err := h.Service.AddIcal(c.Request().Context(), src, defaultTZ, eventGroupNull); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add ICS: "+err.Error())
 	}
 
@@ -462,9 +535,9 @@ func (h *HTTP) AddICS(c echo.Context) error {
 
 // @Summary GetICS
 // @Description GetICS
-// @Param code query string false "code for relation"
-// @Param country query string false "country for relation"
-// @Param year query int false "specific year events"
+// @Param entity query string false "entity for relation"
+// @Param event_group query string false "country"
+// @Param year query string false "specific year events"
 // @Success 200 {object} rest.ResponseMessage
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
@@ -486,7 +559,12 @@ func (h *HTTP) GetICS(c echo.Context) error {
 	}
 
 	// convert ics format
-	str, err := ical.GenerateICS(events, "Holidays")
+	category := strings.Join(q.GetValues("entity"), ", ")
+	if category == "" {
+		category = "Holidays"
+	}
+
+	str, err := ical.GenerateICS(events, category)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}

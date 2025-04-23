@@ -42,21 +42,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "event_group",
+                        "name": "event_group",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "entity for relation",
+                        "name": "entity",
+                        "in": "query"
+                    },
+                    {
                         "type": "boolean",
                         "description": "disabled",
                         "name": "disabled",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "code for relation",
-                        "name": "code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
                         "in": "query"
                     },
                     {
@@ -134,6 +134,42 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "DeleteEvents for multiple events",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "DeleteEvents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
             }
         },
         "/events/{id}": {
@@ -173,12 +209,57 @@ const docTemplate = `{
                     }
                 }
             },
-            "delete": {
-                "description": "RemoveEvent",
+            "put": {
+                "description": "PutEvent",
                 "tags": [
                     "Events"
                 ],
-                "summary": "RemoveEvent",
+                "summary": "PutEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Event",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Event"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "DeleteEvent",
+                "tags": [
+                    "Events"
+                ],
+                "summary": "DeleteEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -210,6 +291,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/holiday": {
+            "get": {
+                "description": "GetEvents for specific date",
+                "tags": [
+                    "Search"
+                ],
+                "summary": "Holiday",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "entity for relation",
+                        "name": "entity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "country for relation",
+                        "name": "event_group",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "date specific event",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.ResponseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/ics": {
             "get": {
                 "description": "GetICS",
@@ -220,18 +351,18 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "code for relation",
-                        "name": "code",
+                        "description": "entity for relation",
+                        "name": "entity",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
+                        "description": "country",
+                        "name": "event_group",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "specific year events",
                         "name": "year",
                         "in": "query"
@@ -277,19 +408,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "code for relation",
-                        "name": "code",
+                        "description": "event_group for ics",
+                        "name": "event_group",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timezone like Europe/Amsterdam",
+                        "description": "timezone like Europe/Amsterdam default UTC",
                         "name": "tz",
                         "in": "query"
                     }
@@ -326,20 +451,26 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "code for relation",
-                        "name": "code",
+                        "description": "entity",
+                        "name": "entity",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
+                        "description": "event_id",
+                        "name": "event_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "event_group",
+                        "name": "event_group",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -401,45 +532,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-array_string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
                             "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/relations/{id}": {
-            "get": {
-                "description": "GetRelation",
-                "tags": [
-                    "Relations"
-                ],
-                "summary": "GetRelation",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Relation ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.Response-github_com_worldline-go_calendar_pkg_models_Relation"
                         }
                     },
                     "400": {
@@ -457,73 +550,29 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "RemoveRelation",
+                "description": "DeleteRelations for multiple relations",
                 "tags": [
                     "Relations"
                 ],
-                "summary": "RemoveRelation",
+                "summary": "DeleteRelations",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Relation ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rest.ResponseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/workday": {
-            "get": {
-                "description": "GetEvents for specific date",
-                "tags": [
-                    "Search"
-                ],
-                "summary": "WorkDay",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "code for relation",
-                        "name": "code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "country for relation",
-                        "name": "country",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "date specific event",
-                        "name": "date",
+                        "description": "entity",
+                        "name": "entity",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "duration like 1d, 2w, 1h, 1m",
-                        "name": "duration",
+                        "description": "event_id",
+                        "name": "event_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "event_group",
+                        "name": "event_group",
                         "in": "query"
                     }
                 ],
@@ -531,7 +580,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.Response-array_github_com_worldline-go_calendar_pkg_models_Event"
+                            "$ref": "#/definitions/rest.ResponseMessage"
                         }
                     },
                     "400": {
@@ -569,6 +618,9 @@ const docTemplate = `{
                 "disabled": {
                     "type": "boolean"
                 },
+                "event_group": {
+                    "$ref": "#/definitions/types.Null-string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -592,16 +644,13 @@ const docTemplate = `{
         "github_com_worldline-go_calendar_pkg_models.Relation": {
             "type": "object",
             "properties": {
-                "code": {
+                "entity": {
                     "type": "string"
                 },
-                "country": {
+                "event_group": {
                     "type": "string"
                 },
                 "event_id": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -709,25 +758,22 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.Response-github_com_worldline-go_calendar_pkg_models_Relation": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "$ref": "#/definitions/rest.Message"
-                },
-                "meta": {
-                    "$ref": "#/definitions/rest.Meta"
-                },
-                "payload": {
-                    "$ref": "#/definitions/github_com_worldline-go_calendar_pkg_models.Relation"
-                }
-            }
-        },
         "rest.ResponseMessage": {
             "type": "object",
             "properties": {
                 "message": {
                     "$ref": "#/definitions/rest.Message"
+                }
+            }
+        },
+        "types.Null-string": {
+            "type": "object",
+            "properties": {
+                "v": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
                 }
             }
         }
