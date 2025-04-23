@@ -133,7 +133,7 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.POST("/relations", h.AddRelations)
 	g.DELETE("/relations", h.DeleteRelations)
 
-	g.GET("/holiday", h.Holiday)
+	g.GET("/holidays", h.Holidays)
 	g.POST("/ics", h.AddICS)
 	g.GET("/ics", h.GetICS)
 }
@@ -445,17 +445,17 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 
 // ////////////////////////////////////////////////////////////////
 
-// @Summary Holiday
-// @Description GetEvents for specific date
+// @Summary Holidays
+// @Description Holidays for specific date
 // @Param entity query int false "entity for relation"
 // @Param event_group query string false "country for relation"
 // @Param date query string true "date specific event"
 // @Success 200 {object} rest.Response[[]models.Event]
 // @Failure 400 {object} rest.ResponseMessage
 // @Failure 500 {object} rest.ResponseMessage
-// @Router /holiday [get]
+// @Router /holidays [get]
 // @Tags Search
-func (h *HTTP) Holiday(c echo.Context) error {
+func (h *HTTP) Holidays(c echo.Context) error {
 	q, err := query.ParseWithValidator(
 		c.QueryString(),
 		h.Validator.GetEventsDate,

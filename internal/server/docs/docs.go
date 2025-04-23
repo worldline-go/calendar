@@ -291,13 +291,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/holiday": {
+        "/holidays": {
             "get": {
-                "description": "GetEvents for specific date",
+                "description": "Holidays for specific date",
                 "tags": [
                     "Search"
                 ],
-                "summary": "Holiday",
+                "summary": "Holidays",
                 "parameters": [
                     {
                         "type": "integer",
