@@ -9,11 +9,10 @@ import (
 	"github.com/worldline-go/initializer"
 	"github.com/worldline-go/tell"
 
+	"github.com/worldline-go/calendar/internal/adapter/repository"
 	"github.com/worldline-go/calendar/internal/config"
-	"github.com/worldline-go/calendar/internal/database"
+	"github.com/worldline-go/calendar/internal/core/service"
 	"github.com/worldline-go/calendar/internal/server"
-	"github.com/worldline-go/calendar/internal/service"
-	"github.com/worldline-go/calendar/internal/service/ports"
 )
 
 var (
@@ -50,18 +49,18 @@ func run(ctx context.Context) error {
 
 	// ///////////////////////////////////////////////////////
 	// database operations
-	if err := database.MigrateDB(ctx, cfg); err != nil {
+	if err := repository.MigrateDB(ctx, cfg); err != nil {
 		return fmt.Errorf("failed database migration: %w", err)
 	}
 
-	db, err := database.New(ctx, cfg)
+	calendarPostgresAdapter, err := repository.New(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	// ///////////////////////////////////////////////////////
 	// service initialize
-	svc, err := service.New(ctx, ports.NewDatabase(db))
+	svc, err := service.NewCalendarService(ctx, calendarPostgresAdapter)
 	if err != nil {
 		return fmt.Errorf("failed to create service: %w", err)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/worldline-go/calendar/pkg/ical"
 )
 
-func (s *Service) getRRule(ctx context.Context, repeatStr string) (*ical.Repeat, error) {
+func (s *CalendarService) getRRule(ctx context.Context, repeatStr string) (*ical.Repeat, error) {
 	s.m.RLock()
 	rrule, ok, err := s.cacheRule.Get(ctx, repeatStr)
 	s.m.RUnlock()
@@ -45,7 +45,7 @@ func (s *Service) getRRule(ctx context.Context, repeatStr string) (*ical.Repeat,
 	return rrule, nil
 }
 
-func (s *Service) TZLocation(tz string) (*time.Location, error) {
+func (s *CalendarService) TZLocation(tz string) (*time.Location, error) {
 	s.m.RLock()
 	loc, ok, err := s.cacheTZ.Get(context.Background(), tz)
 	s.m.RUnlock()

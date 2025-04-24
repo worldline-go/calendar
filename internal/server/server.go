@@ -10,15 +10,15 @@ import (
 	echoSwagger "github.com/worldline-go/echo-swagger"
 	"github.com/worldline-go/rest/server"
 
+	"github.com/worldline-go/calendar/internal/adapter/handler"
 	"github.com/worldline-go/calendar/internal/config"
+	"github.com/worldline-go/calendar/internal/core/port"
 	"github.com/worldline-go/calendar/internal/server/docs"
-	"github.com/worldline-go/calendar/internal/server/handler"
-	"github.com/worldline-go/calendar/internal/service"
 )
 
 // @title calendar API
 // @BasePath /calendar/v1
-func NewServer(ctx context.Context, svc *service.Service) (*server.Server, error) {
+func NewServer(ctx context.Context, svc port.CalendarService) (*server.Server, error) {
 	return server.New(ctx, config.ServiceName, func(ctx context.Context, mux *http.ServeMux, e *echo.Echo) error {
 		if err := docs.Info(); err != nil {
 			log.Warn().Err(err).Msg("failed to set swagger info")

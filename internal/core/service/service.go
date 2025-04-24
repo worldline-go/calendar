@@ -15,18 +15,21 @@ import (
 	"github.com/worldline-go/query"
 	"github.com/worldline-go/types"
 
+	"github.com/worldline-go/calendar/internal/core/port"
 	"github.com/worldline-go/calendar/pkg/ical"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
-type Service struct {
-	db        Database
+type CalendarService struct {
+	db        port.CalendarPort
 	cacheRule cache.Cacher[string, *ical.Repeat]
 	cacheTZ   cache.Cacher[string, *time.Location]
 	m         sync.RWMutex
 }
 
-func New(ctx context.Context, db Database) (*Service, error) {
+var _ port.CalendarService = (*CalendarService)(nil)
+
+func NewCalendarService(ctx context.Context, db port.CalendarPort) (*CalendarService, error) {
 	cacheRule, err := cache.New[string, *ical.Repeat](ctx,
 		memory.Store,
 		cache.WithStoreConfig(memory.Config{
@@ -49,7 +52,7 @@ func New(ctx context.Context, db Database) (*Service, error) {
 		return nil, fmt.Errorf("failed to create cacheTZ: %w", err)
 	}
 
-	return &Service{
+	return &CalendarService{
 		cacheRule: cacheRule,
 		cacheTZ:   cacheTZ,
 		db:        db,
@@ -57,7 +60,7 @@ func New(ctx context.Context, db Database) (*Service, error) {
 }
 
 // WorkDay returns the next workday after the given date.
-func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, error) {
+func (s *CalendarService) WorkDay(ctx context.Context, date types.Time) (types.Time, error) {
 	return types.Time{Time: time.Now()}, nil
 }
 
@@ -65,7 +68,7 @@ func (s *Service) WorkDay(ctx context.Context, date types.Time) (types.Time, err
 // Database
 // //////////////////////////////////////////////////////////////
 
-func (s *Service) AddEvents(ctx context.Context, events []models.Event) error {
+func (s *CalendarService) AddEvents(ctx context.Context, events []models.Event) error {
 	if err := s.db.AddEvents(ctx, events); err != nil {
 		return err
 	}
@@ -73,7 +76,7 @@ func (s *Service) AddEvents(ctx context.Context, events []models.Event) error {
 	return nil
 }
 
-func (s *Service) RemoveEvent(ctx context.Context, id ...string) error {
+func (s *CalendarService) RemoveEvent(ctx context.Context, id ...string) error {
 	err := s.db.RemoveEvent(ctx, id...)
 	if err != nil {
 		return err
@@ -82,7 +85,7 @@ func (s *Service) RemoveEvent(ctx context.Context, id ...string) error {
 	return nil
 }
 
-func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (uint64, error) {
+func (s *CalendarService) GetEventsCount(ctx context.Context, q *query.Query) (uint64, error) {
 	count, err := s.db.GetEventsCount(ctx, q)
 	if err != nil {
 		return 0, err
@@ -91,7 +94,7 @@ func (s *Service) GetEventsCount(ctx context.Context, q *query.Query) (uint64, e
 	return count, nil
 }
 
-func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error) {
+func (s *CalendarService) GetEvents(ctx context.Context, q *query.Query) ([]models.Event, error) {
 	if q.HasAny("date") {
 		var events []models.Event
 
@@ -165,7 +168,7 @@ func (s *Service) GetEvents(ctx context.Context, q *query.Query) ([]models.Event
 	return events, nil
 }
 
-func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Event, error) {
+func (s *CalendarService) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Event, error) {
 	var events []models.Event
 
 	qYearCheck := []int{}
@@ -261,7 +264,7 @@ func (s *Service) GetEventsICS(ctx context.Context, q *query.Query) ([]models.Ev
 	return events, nil
 }
 
-func (s *Service) tzTime(h *models.Event) error {
+func (s *CalendarService) tzTime(h *models.Event) error {
 	tzLoc, err := s.TZLocation(h.Tz)
 	if err != nil {
 		return fmt.Errorf("failed to get timezone location: %w", err)
@@ -273,7 +276,7 @@ func (s *Service) tzTime(h *models.Event) error {
 	return nil
 }
 
-func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error) {
+func (s *CalendarService) GetEvent(ctx context.Context, id string) (*models.Event, error) {
 	h, err := s.db.GetEvent(ctx, id)
 	if err != nil {
 		return nil, err
@@ -284,7 +287,7 @@ func (s *Service) GetEvent(ctx context.Context, id string) (*models.Event, error
 	return h, nil
 }
 
-func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
+func (s *CalendarService) UpdateEvent(ctx context.Context, id string, event *models.Event) error {
 	err := s.db.UpdateEvent(ctx, id, event)
 	if err != nil {
 		return err
@@ -297,7 +300,7 @@ func (s *Service) UpdateEvent(ctx context.Context, id string, event *models.Even
 // Relations
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddRelations(ctx context.Context, relations []models.Relation) error {
+func (s *CalendarService) AddRelations(ctx context.Context, relations []models.Relation) error {
 	if err := s.db.AddRelations(ctx, relations); err != nil {
 		return err
 	}
@@ -305,7 +308,7 @@ func (s *Service) AddRelations(ctx context.Context, relations []models.Relation)
 	return nil
 }
 
-func (s *Service) RemoveRelation(ctx context.Context, q *query.Query) error {
+func (s *CalendarService) RemoveRelation(ctx context.Context, q *query.Query) error {
 	err := s.db.RemoveRelation(ctx, q)
 	if err != nil {
 		return err
@@ -314,7 +317,7 @@ func (s *Service) RemoveRelation(ctx context.Context, q *query.Query) error {
 	return nil
 }
 
-func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
+func (s *CalendarService) GetRelations(ctx context.Context, q *query.Query) ([]models.Relation, error) {
 	relations, err := s.db.GetRelations(ctx, q)
 	if err != nil {
 		return nil, err
@@ -323,7 +326,7 @@ func (s *Service) GetRelations(ctx context.Context, q *query.Query) ([]models.Re
 	return relations, nil
 }
 
-func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (uint64, error) {
+func (s *CalendarService) GetRelationsCount(ctx context.Context, q *query.Query) (uint64, error) {
 	count, err := s.db.GetRelationsCount(ctx, q)
 	if err != nil {
 		return 0, err
@@ -336,7 +339,7 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (uint64
 // iCal
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddIcal(ctx context.Context, data io.Reader, tz *time.Location, group types.Null[string], updatedBy string) error {
+func (s *CalendarService) AddIcal(ctx context.Context, data io.Reader, tz *time.Location, group types.Null[string], updatedBy string) error {
 	events, err := ical.ParseICS(data, tz)
 	if err != nil {
 		return fmt.Errorf("failed to parse ics: %w", err)

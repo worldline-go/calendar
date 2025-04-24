@@ -13,13 +13,13 @@ import (
 	"github.com/worldline-go/rest/server"
 	"github.com/worldline-go/types"
 
-	"github.com/worldline-go/calendar/internal/service"
+	"github.com/worldline-go/calendar/internal/core/port"
 	"github.com/worldline-go/calendar/pkg/ical"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
 type HTTP struct {
-	Service *service.Service
+	Service port.CalendarService
 
 	Validator QueryValidator
 }
@@ -37,7 +37,7 @@ type QueryValidator struct {
 
 var DefaultLimit uint64 = 25
 
-func NewHTTP(svc *service.Service) (*HTTP, error) {
+func NewHTTP(svc port.CalendarService) (*HTTP, error) {
 	validatorGetEvents, err := query.NewValidator(
 		query.WithField(query.WithNotAllowed()),
 		query.WithSort(query.WithIn("id", "entity", "event_group", "name", "description", "disabled", "date_from", "date_to", "updated_at", "updated_by")),
@@ -125,9 +125,9 @@ func (h *HTTP) RegisterRoutes(g *echo.Group) {
 	g.POST("/events", h.AddEvents)
 	g.DELETE("/events", h.DeleteEvents)
 
-	g.GET("/events/{id}", h.GetEvent)
-	g.DELETE("/events/{id}", h.DeleteEvent)
-	g.PUT("/events/{id}", h.PutEvent)
+	g.GET("/events/:id", h.GetEvent)
+	g.DELETE("/events/:id", h.DeleteEvent)
+	g.PUT("/events/:id", h.PutEvent)
 
 	g.GET("/relations", h.GetRelations)
 	g.POST("/relations", h.AddRelations)
