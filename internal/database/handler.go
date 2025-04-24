@@ -12,7 +12,6 @@ import (
 	"github.com/worldline-go/query/adapter/adaptergoqu"
 	"github.com/worldline-go/types"
 
-	"github.com/worldline-go/calendar/internal/intercom"
 	"github.com/worldline-go/calendar/pkg/models"
 )
 
@@ -33,6 +32,8 @@ var (
 	TableEventsAs   exp.AliasedExpression
 	TableRelationAs exp.AliasedExpression
 )
+
+var ErrStopLoop = errors.New("stop loop")
 
 func setSchema(schema string) {
 	Schema = goqu.S(schema)
@@ -119,7 +120,7 @@ func (db *Database) GetEventsWithFunc(ctx context.Context, q *query.Query, fn fu
 			return err
 		}
 		if err := fn(event); err != nil {
-			if errors.Is(err, intercom.ErrStopLoop) {
+			if errors.Is(err, ErrStopLoop) {
 				break
 			}
 

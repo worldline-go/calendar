@@ -13,6 +13,7 @@ import (
 	"github.com/worldline-go/calendar/internal/database"
 	"github.com/worldline-go/calendar/internal/server"
 	"github.com/worldline-go/calendar/internal/service"
+	"github.com/worldline-go/calendar/internal/service/ports"
 )
 
 var (
@@ -60,7 +61,7 @@ func run(ctx context.Context) error {
 
 	// ///////////////////////////////////////////////////////
 	// service initialize
-	svc, err := service.New(ctx, db)
+	svc, err := service.New(ctx, ports.NewDatabase(db))
 	if err != nil {
 		return fmt.Errorf("failed to create service: %w", err)
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/worldline-go/query"
 
@@ -22,3 +23,5 @@ type Database interface {
 	UpdateEvent(ctx context.Context, id string, event *models.Event) error
 	RemoveEvent(ctx context.Context, id ...string) error
 }
+
+var ErrStopLoop = errors.New("stop loop")

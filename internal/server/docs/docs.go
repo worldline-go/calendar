@@ -300,7 +300,7 @@ const docTemplate = `{
                 "summary": "Holidays",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "entity for relation",
                         "name": "entity",
                         "in": "query"
