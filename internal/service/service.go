@@ -336,7 +336,7 @@ func (s *Service) GetRelationsCount(ctx context.Context, q *query.Query) (uint64
 // iCal
 // ///////////////////////////////////////////////////////////////
 
-func (s *Service) AddIcal(ctx context.Context, data io.Reader, tz *time.Location, group types.Null[string]) error {
+func (s *Service) AddIcal(ctx context.Context, data io.Reader, tz *time.Location, group types.Null[string], updatedBy string) error {
 	events, err := ical.ParseICS(data, tz)
 	if err != nil {
 		return fmt.Errorf("failed to parse ics: %w", err)
@@ -344,6 +344,7 @@ func (s *Service) AddIcal(ctx context.Context, data io.Reader, tz *time.Location
 
 	for i := range events {
 		events[i].EventGroup = group
+		events[i].UpdatedBy = updatedBy
 	}
 
 	if err := s.db.AddEvents(ctx, events); err != nil {

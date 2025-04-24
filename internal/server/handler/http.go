@@ -447,7 +447,7 @@ func (h *HTTP) GetRelations(c echo.Context) error {
 
 // @Summary Holidays
 // @Description Holidays for specific date
-// @Param entity query int false "entity for relation"
+// @Param entity query string false "entity for relation"
 // @Param event_group query string false "country for relation"
 // @Param date query string true "date specific event"
 // @Success 200 {object} rest.Response[[]models.Event]
@@ -522,7 +522,7 @@ func (h *HTTP) AddICS(c echo.Context) error {
 		defaultTZ = loc
 	}
 
-	if err := h.Service.AddIcal(c.Request().Context(), src, defaultTZ, eventGroupNull); err != nil {
+	if err := h.Service.AddIcal(c.Request().Context(), src, defaultTZ, eventGroupNull, server.GetUser(c)); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to add ICS: "+err.Error())
 	}
 
@@ -559,7 +559,11 @@ func (h *HTTP) GetICS(c echo.Context) error {
 	}
 
 	// convert ics format
-	category := strings.Join(q.GetValues("entity"), ", ")
+	category := strings.Join(q.GetValues("entity"), ",")
+	fileName := strings.ToLower(strings.ReplaceAll(category, ",", "_"))
+	if fileName == "" {
+		fileName = "events"
+	}
 	if category == "" {
 		category = "Holidays"
 	}
@@ -571,7 +575,7 @@ func (h *HTTP) GetICS(c echo.Context) error {
 
 	// send ics file
 	c.Response().Header().Set(echo.HeaderContentType, "text/calendar")
-	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=events.ics")
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+fileName+".ics")
 	c.Response().WriteHeader(http.StatusOK)
 
 	_, err = c.Response().Write([]byte(str))
